@@ -1,46 +1,26 @@
-# Daily SWE Expression
+# Skills
 
-Help non-native English-speaking software engineers sound more natural at work.
+A small collection of practical Claude Code skills.
 
-This repository contains the `english-swe-daily` skill: a practical English coach for everyday engineering communication. It is built for developers who can already work in English, but want to sound less textbook-like and more like a real teammate in standups, Slack threads, 1:1s, code reviews, and meetings.
+## Skills
 
-## Why This Exists
+### `english-swe-daily`
 
-Many engineers do not struggle with grammar. They struggle with sounding natural.
+A practical English coach for everyday engineering communication. Built for
+developers who can already work in English but want to sound less textbook-like
+and more like a real teammate in standups, Slack threads, 1:1s, code reviews,
+and meetings.
 
-They know what they want to say, but in real work situations they often sound:
+Many engineers do not struggle with grammar — they struggle with sounding
+natural. This skill teaches the kind of English people actually use in software
+teams, with a strong focus on natural phrasing, collaboration tone, and
+day-to-day workplace situations.
 
-- too formal
-- too direct
-- slightly unnatural
-- less confident than they actually are
-
-This skill closes that gap. It teaches the kind of English people actually use in software teams, with a strong focus on natural phrasing, collaboration tone, and day-to-day workplace situations.
-
-## Who It Is For
-
-- Non-native English-speaking software engineers
-- Developers working with international teams
-- Engineers who want to improve spoken and written workplace English
-- People who want to sound more natural in standups, PR comments, Slack messages, and meetings
-
-## What You Get
-
-- Daily practice sessions with natural SWE expressions
-- Realistic workplace scenarios instead of generic textbook English
-- Coaching on natural vs. unnatural phrasing
-- Coverage across standups, blockers, feedback, pushback, and small talk
-- Session logs so learners can keep improving without repeating the same material
-
-## Install
-
-Install the skill with:
+Install:
 
 ```bash
 npx skills add https://github.com/wquguru/skills --skill english-swe-daily
 ```
-
-## Example Use Cases
 
 Ask for help with prompts like:
 
@@ -50,19 +30,34 @@ Ask for help with prompts like:
 - "How do I say this more naturally at work?"
 - "Give me today's SWE English session."
 
-## Why It Works
+### `pi-setup`
 
-Most English learning content is too broad for engineers and too formal for real teams.
+Configures Pi Agent (`@earendil-works/pi-coding-agent`) with DeepSeek V4
+(built-in provider) and Ant-Ling Ring-2.6-1T (custom OpenAI-compatible
+provider), plus a curated extension set, while automatically working around 7
+known pitfalls.
 
-This skill is narrow on purpose. It focuses on the highest-frequency communication moments that affect how engineers are perceived every day:
+It detects before it acts: it probes whether pi is installed, whether config
+already exists, and where keys live before changing anything. Keys are never
+written in plaintext — pi config only stores lazy `!shell` commands and the key
+stays in the user's original file. Model selection, default model, default
+thinking tier, and the extension set are all confirmed interactively.
 
-- giving updates clearly
-- asking for help without sounding awkward
-- disagreeing politely
-- giving feedback without sounding blunt
-- making small talk without overthinking every sentence
+Install:
 
-Small gains in these moments compound fast. Better phrasing leads to smoother collaboration, better visibility, and more confidence in meetings and async communication.
+```bash
+npx skills add https://github.com/wquguru/skills --skill pi-setup
+```
+
+Trigger it in Claude Code by saying "配置 pi", "setup pi agent", "把
+ring/deepseek 配到 pi", or run `/pi-setup` manually.
+
+Prerequisites:
+
+- Node.js / npm (to install pi)
+- A DeepSeek key (in `~/.deepseek` or an environment variable)
+- An Ant-Ling/Ling key (`LING_API_KEY`, in a shell rc or environment
+  variable) — only needed when enabling Ring
 
 ## Repository Structure
 
@@ -72,6 +67,11 @@ skills/
     SKILL.md
     references/
       expressions-bank.md
+  pi-setup/
+    SKILL.md
+    references/
+      config-templates.md
+      troubleshooting.md
 ```
 
 ## License
