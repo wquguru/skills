@@ -62,9 +62,78 @@
 
 `apiKey` 的 `zsh` 按用户默认 shell 替换（bash→`bash -ic`，fish 需另写）。检测到 live env 时可简化为 `"LING_API_KEY"`。
 
+## models.json — ZenMux（多模型聚合 provider）
+
+ZenMux 是 OpenAI 兼容的多模型聚合层，一个 key 同时接 Google / Anthropic / OpenAI / DeepSeek 等。skill 默认写入 Gemini 3.5 Flash 付费版 + 限免版两个 model（同一 provider 块，不增加配置负担）：
+
+```json
+{
+  "providers": {
+    "zenmux": {
+      "baseUrl": "https://zenmux.ai/api/v1",
+      "api": "openai-completions",
+      "apiKey": "!awk -F= '/^(ZENMUX_)?API_KEY=/{gsub(/[\"'\\''[:space:]]/, \"\", $2); print $2; exit}' ~/.gemini-zenmux-new",
+      "authHeader": true,
+      "compat": {
+        "supportsDeveloperRole": false
+      },
+      "models": [
+        {
+          "id": "google/gemini-3.5-flash",
+          "name": "Gemini 3.5 Flash (ZenMux)",
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "high"
+          },
+          "input": ["text", "image"],
+          "contextWindow": 1048576,
+          "maxTokens": 65536,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "google/gemini-3.5-flash-free",
+          "name": "Gemini 3.5 Flash Free (ZenMux)",
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "minimal": "minimal",
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "high"
+          },
+          "input": ["text", "image"],
+          "contextWindow": 1048576,
+          "maxTokens": 65536,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        }
+      ]
+    }
+  }
+}
+```
+
+不可省略的几处：
+- `compat.supportsDeveloperRole: false` —— ZenMux 后端的部分 upstream 拒 developer 角色，跟 Ant-Ling 同一坑（坑 2）
+- `thinkingLevelMap` 必须含 `"xhigh": "high"` —— Gemini reasoning_effort 不接受 `xhigh` 字面值，映射回 high；Pi 端 UI 仍会显示 xhigh 档可选
+- `maxTokens: 65536` —— Gemini 3.5 Flash 输出上限 64K，**reasoning_tokens 计入 output**，给小了会 finish_reason:length 截断
+- `contextWindow: 1048576` —— Gemini 3.5 Flash 输入 1M，写小会限制 Pi 的预算估算
+
+`apiKey` 字段适配密钥位置：
+- 密钥在 `~/.gemini-zenmux-new` / `~/.zenmux` 等独立文件（`API_KEY=` 或 `ZENMUX_API_KEY=` 开头）→ 上面模板的 `!awk` 形式，文件路径按检测到的替换
+- 密钥在 live env → 简化为 `"apiKey": "ZENMUX_API_KEY"`（值是变量名）
+- 密钥在 shell rc 但未 export → `"!zsh -ic 'echo $ZENMUX_API_KEY' 2>/dev/null | tail -1"`（shell 按用户实际 shell 替换）
+
+**追加其它 ZenMux 模型**（Claude / GPT / DeepSeek-via-zenmux 等）：往上面 `models` 数组追加同样结构的对象即可，model id 见 https://zenmux.ai 当前 catalog。skill 不硬编码这些以免 catalog 改动导致配置失效。
+
 ## settings.json — 默认模型 + enabledModels
 
-`enabledModels` 用用户在 AskUserQuestion Q1 多选的结果填充。Ring 必须用 `provider/id` 形式 `ant-ling/Ring-2.6-1T`（避免重名冲突）；DeepSeek 无歧义可省前缀。
+`enabledModels` 用用户在 AskUserQuestion Q1 多选的结果填充。Ring 必须用 `provider/id` 形式 `ant-ling/Ring-2.6-1T`（避免重名冲突）；ZenMux 同理写 `zenmux/google/gemini-3.5-flash`；DeepSeek 无歧义可省前缀。
+
+如果用户 Q1 选了 ZenMux Gemini，`enabledModels` **同时加入付费版和免费版**，方便 Ctrl+L 切换：
 
 ```json
 {
@@ -74,7 +143,9 @@
   "enabledModels": [
     "deepseek-v4-pro",
     "deepseek-v4-flash",
-    "ant-ling/Ring-2.6-1T"
+    "ant-ling/Ring-2.6-1T",
+    "zenmux/google/gemini-3.5-flash",
+    "zenmux/google/gemini-3.5-flash-free"
   ]
 }
 ```

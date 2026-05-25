@@ -1,4 +1,4 @@
-# 故障排查：7 个已知坑
+# 故障排查：8 个已知坑
 
 每个坑按 现象 → 复现 → 根因 → 解法 → 回退 组织。遇异常先对照这里，再用 curl 探针二分定位。
 
@@ -58,9 +58,22 @@
 - **根因**：DeepSeek 是 pi 内置 provider，规格（ctx 1M / maxTokens 384000 / `thinkingFormat: deepseek` / `requiresReasoningContentOnAssistantMessages` / thinkingLevelMap）随 pi 版本维护。
 - **解法**：DeepSeek 只在 auth.json 给 key，**绝不**进 models.json。手动覆盖会抄不准 + 固化旧值，`pi update` 不会帮你更新。
 
+## 坑 8 — Gemini 3.5 Flash 默认重 reasoning：max_tokens 给小直接空回
+
+- **现象**：调 ZenMux `google/gemini-3.5-flash` 一律 `finish_reason:length`、`content:""`，但 `usage` 里 `completion_tokens` 非零。
+- **复现**：
+  ```bash
+  curl ... -d '{"model":"google/gemini-3.5-flash","messages":[{"role":"user","content":"reply pong"}],"max_tokens":30}'
+  # → "finish_reason":"length","content":"","completion_tokens":27,"reasoning_tokens":27
+  ```
+- **根因**：Gemini 3.5 Flash 默认开启 reasoning，且 `reasoning_tokens` 计入 `completion_tokens`（OpenAI 协议约定）。30 个 token 直接被推理吃光，没剩下给可见输出。
+- **解法**：models.json 的 `maxTokens` 至少给到 2048，长任务给 65536；不要按"我只要一句话回答"思路压小。
+- **额外提醒（认知坑）**：Pi footer 显示 `↑input ↓output R<n>` 中的 **R 是 cacheRead 不是 reasoning**——核对成本时不要把 R 乘 output 单价（实际成本会差一个数量级，cacheRead 单价只有 input 的 1/10）。真实账单以服务端 dashboard 为准。
+
 ## 通用 curl 探针
 
 ```bash
+# === Ant-Ling Ring ===
 KEY=$(zsh -ic 'echo $LING_API_KEY' 2>/dev/null | tail -1)
 
 # 基础连通
@@ -73,6 +86,23 @@ for eff in minimal low medium high xhigh; do
   curl -s -X POST https://api.ant-ling.com/v1/chat/completions \
     -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
     -d "{\"model\":\"Ring-2.6-1T\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_completion_tokens\":30,\"reasoning_effort\":\"$eff\"}"
+done
+
+# === ZenMux Gemini 3.5 Flash ===
+KEY=$(awk -F= '/^(ZENMUX_)?API_KEY=/{print $2; exit}' ~/.gemini-zenmux-new 2>/dev/null \
+       || printenv ZENMUX_API_KEY)
+
+# 基础连通（max_tokens 一定要 ≥2048，否则被 reasoning 烧光）
+curl -s -X POST https://zenmux.ai/api/v1/chat/completions \
+  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"model":"google/gemini-3.5-flash-free","messages":[{"role":"user","content":"reply pong"}],"max_tokens":2048,"reasoning_effort":"low"}'
+
+# Gemini reasoning_effort 不支持 xhigh，映射到 high
+for eff in minimal low medium high; do
+  curl -s -X POST https://zenmux.ai/api/v1/chat/completions \
+    -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+    -d "{\"model\":\"google/gemini-3.5-flash-free\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":2048,\"reasoning_effort\":\"$eff\"}" \
+    | python3 -c "import json,sys;r=json.load(sys.stdin);print('$eff:',r['choices'][0]['finish_reason'],'reasoning_tokens=',r['usage']['completion_tokens_details'].get('reasoning_tokens'))"
 done
 ```
 
