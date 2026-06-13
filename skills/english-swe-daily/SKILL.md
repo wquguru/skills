@@ -115,8 +115,7 @@ At the end of **every session**, generate a Session Log the user can save and pa
 
 ### Topic tags
 
-Use short tags in brackets after each expression:
-`[standup]` `[blocker]` `[feedback]` `[pushback]` `[smalltalk]`
+Use short tags in brackets after each expression: `[standup]` `[blocker]` `[feedback]` `[pushback]` `[smalltalk]`
 
 ### When to generate
 

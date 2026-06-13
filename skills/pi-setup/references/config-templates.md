@@ -17,8 +17,7 @@
 
 写后 `chmod 600 ~/.pi/agent/auth.json`。
 
-密钥若检测到在 live env：可改用最简形式 `{"deepseek":{"type":"api_key","key":"DEEPSEEK_API_KEY"}}`（值是环境变量名）。
-密钥若在某 rc 文件但未 export：用 `"key": "!zsh -ic 'echo $DEEPSEEK_API_KEY' 2>/dev/null | tail -1"`（shell 按用户实际 shell 替换）。
+密钥若检测到在 live env：可改用最简形式 `{"deepseek":{"type":"api_key","key":"DEEPSEEK_API_KEY"}}`（值是环境变量名）。 密钥若在某 rc 文件但未 export：用 `"key": "!zsh -ic 'echo $DEEPSEEK_API_KEY' 2>/dev/null | tail -1"`（shell 按用户实际 shell 替换）。
 
 ## models.json — Ant-Ling Ring（自定义 provider）
 
@@ -150,8 +149,7 @@ ZenMux 是 OpenAI 兼容的多模型聚合层，一个 key 同时接 Google / An
 }
 ```
 
-`pi install` 会自动往 settings.json 追加 `packages` 数组，不用手写。
-DeepSeek **不进 models.json**（内置 provider，规格随 `pi update` 维护，手配会固化旧值——坑 7）。
+`pi install` 会自动往 settings.json 追加 `packages` 数组，不用手写。 DeepSeek **不进 models.json**（内置 provider，规格随 `pi update` 维护，手配会固化旧值——坑 7）。
 
 ## pi-sub-bar-settings.json — 解快捷键冲突（坑 6）
 

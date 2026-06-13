@@ -10,12 +10,7 @@ brew install ffmpeg-full     # ffmpeg WITH libass/drawtext (lean `ffmpeg` lacks 
 brew install deno            # optional JS runtime for yt-dlp's YouTube extractor
 ```
 
-Why `ffmpeg-full`: Homebrew's default `ffmpeg` formula no longer bundles
-libass/libfreetype (they moved to `ffmpeg-full`). Without them there is no
-`subtitles` or `drawtext` filter, so subtitle burn-in and watermarks fail.
-`ffmpeg-full` is **keg-only** — it installs to
-`/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg` and does **not** shadow your existing
-`ffmpeg`. Plain downloading/converting works with either build.
+Why `ffmpeg-full`: Homebrew's default `ffmpeg` formula no longer bundles libass/libfreetype (they moved to `ffmpeg-full`). Without them there is no `subtitles` or `drawtext` filter, so subtitle burn-in and watermarks fail. `ffmpeg-full` is **keg-only** — it installs to `/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg` and does **not** shadow your existing `ffmpeg`. Plain downloading/converting works with either build.
 
 Verify a build supports burn-in:
 
@@ -32,8 +27,7 @@ sudo apt-get install ffmpeg python3-pip fonts-noto-cjk   # Debian/Ubuntu
 python3 -m pip install -U --user yt-dlp
 ```
 
-`fonts-noto-cjk` gives you a CJK font for Chinese subtitles/watermarks
-(`Noto Sans CJK SC`).
+`fonts-noto-cjk` gives you a CJK font for Chinese subtitles/watermarks (`Noto Sans CJK SC`).
 
 ### conda / pip (any OS)
 
@@ -44,9 +38,7 @@ conda install -c conda-forge ffmpeg   # conda-forge ffmpeg includes libass
 
 ### The "No supported JavaScript runtime" warning
 
-yt-dlp's YouTube extractor wants a JS runtime. Without one it warns and falls
-back to the Android client (usually still works, some formats may be missing).
-Install `deno` (`brew install deno`) to silence it and get all formats.
+yt-dlp's YouTube extractor wants a JS runtime. Without one it warns and falls back to the Android client (usually still works, some formats may be missing). Install `deno` (`brew install deno`) to silence it and get all formats.
 
 ---
 
@@ -83,9 +75,7 @@ yt-dlp --cookies-from-browser chrome "<URL>"
 yt-dlp -o "~/Downloads/%(playlist_index)s - %(title)s.%(ext)s" "<PLAYLIST_URL>"
 ```
 
-Localhost note (unrelated to yt-dlp but common on this kind of box): if a local
-HTTP proxy is set, `curl http://localhost:PORT` may 502 — use
-`curl --noproxy '*' http://localhost:PORT`.
+Localhost note (unrelated to yt-dlp but common on this kind of box): if a local HTTP proxy is set, `curl http://localhost:PORT` may 502 — use `curl --noproxy '*' http://localhost:PORT`.
 
 ---
 
@@ -109,6 +99,4 @@ ffprobe -v error -show_entries stream=codec_type,codec_name:format=duration -of 
 ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 in.mp4
 ```
 
-Quality: re-encoding is lossy. When you must re-encode (e.g. to burn subtitles),
-encode from the **highest-quality source you have** (the original download), not
-a file you already compressed once.
+Quality: re-encoding is lossy. When you must re-encode (e.g. to burn subtitles), encode from the **highest-quality source you have** (the original download), not a file you already compressed once.
