@@ -1,0 +1,19 @@
+# Third-party (external) Agent Skills to vendor in.
+#
+# These are NOT authored here — they are pulled from upstream repos by
+# `just vendor` into ./external/ (git-ignored) and symlinked into the Claude/Codex
+# skill dirs by `just link`, alongside the self-written skills in ./skills/.
+# Only external.yml + external.lock are committed; the vendored copies are not,
+# so this repo stays purely self-written and free of third-party licenses.
+#
+# Each source: a repo, a ref (branch/tag/commit — pin a tag or SHA for
+# reproducibility), and the sub-paths to pull (the dir basename becomes the
+# skill name). Run `just vendor` after editing, then `just link`.
+
+sources:
+  - repo: https://github.com/grafana/skills
+    ref: main
+    include:
+      - skills/grafana-core/dashboarding   # dashboard JSON: panels, gridPos, overrides, thresholds, transformations
+      - skills/grafana-core/alerting-irm   # Grafana-managed alert rules (refId A/B/C), contact points, notification templates
+      - skills/grafana-core/grafana-oss    # provisioning, datasources (incl. InfluxDB/Flux), panel-types, HTTP API

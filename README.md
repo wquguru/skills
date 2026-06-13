@@ -91,14 +91,16 @@ Prerequisites:
 
 ## Local Development
 
-For local hacking, the `Justfile` symlinks every skill under `skills/` into both
-Claude Code (`~/.claude/skills/`) and Codex (`~/.codex/skills/`), so edits in
-this repo take effect immediately without re-publishing.
+For local hacking, the `Justfile` symlinks every skill under `skills/` **and**
+`external/` into both Claude Code (`~/.claude/skills/`) and Codex
+(`~/.codex/skills/`), so edits in this repo take effect immediately without
+re-publishing.
 
 ```bash
-just link     # symlink all skills into ~/.claude/skills and ~/.codex/skills
+just link     # symlink all skills (skills/ + external/) into ~/.claude + ~/.codex
 just unlink   # remove only the symlinks that point back into this repo
 just status   # show link status for each skill in both destinations
+just vendor   # pull third-party skills declared in external.yml into external/
 just          # list available recipes
 ```
 
@@ -107,11 +109,33 @@ from another source is left untouched and reported as skipped. `unlink` only
 removes symlinks that resolve to this repo. After adding a new skill folder, just
 re-run `just link`.
 
+## External (third-party) skills
+
+`skills/` holds the skills authored here (and published via `npx skills add`).
+Third-party skills from other repos are **not** copied in — they are vendored
+separately so this repo stays purely self-written and free of foreign licenses:
+
+1. Declare sources in `external.yml` — a repo, a `ref` (branch/tag/commit), and
+   the sub-paths to pull (each dir's basename becomes the skill name).
+2. `just vendor` shallow/sparse-clones each source, copies the named skill dirs
+   into `external/` (git-ignored), and records the exact upstream commit SHA in
+   `external.lock`.
+3. `just link` symlinks them alongside the self-written skills.
+
+Only `external.yml` + `external.lock` are committed; the vendored code is not.
+Re-run `just vendor` any time to refresh (or after pinning a `ref`). A name that
+would collide with a self-written `skills/<name>` is skipped; entries removed from
+`external.yml` are pruned from `external/` on the next `just vendor`.
+
 ## Repository Structure
 
 ```text
-Justfile          # link / unlink / status recipes for local development
-skills/
+Justfile          # link / unlink / status / vendor recipes
+external.yml      # third-party skill sources (repo + ref + sub-paths)
+external.lock     # resolved upstream commit SHAs (auto-generated)
+scripts/
+  vendor.sh       # pulls external.yml sources into external/
+skills/           # self-written skills (published)
   english-swe-daily/
     SKILL.md
     references/
@@ -129,6 +153,10 @@ skills/
     references/
       installation-and-recipes.md
       translate-and-burn.md
+external/          # vendored third-party skills (git-ignored; just vendor)
+  dashboarding/
+  alerting-irm/
+  grafana-oss/
 ```
 
 ## License
