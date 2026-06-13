@@ -89,9 +89,28 @@ Prerequisites:
 - Homebrew (macOS) or apt/pip (Linux)
 - `yt-dlp` and a libass-enabled `ffmpeg` — `install-tools.sh` sets both up
 
+## Local Development
+
+For local hacking, the `Justfile` symlinks every skill under `skills/` into both
+Claude Code (`~/.claude/skills/`) and Codex (`~/.codex/skills/`), so edits in
+this repo take effect immediately without re-publishing.
+
+```bash
+just link     # symlink all skills into ~/.claude/skills and ~/.codex/skills
+just unlink   # remove only the symlinks that point back into this repo
+just status   # show link status for each skill in both destinations
+just          # list available recipes
+```
+
+`link` is idempotent and never clobbers: an existing real directory or a symlink
+from another source is left untouched and reported as skipped. `unlink` only
+removes symlinks that resolve to this repo. After adding a new skill folder, just
+re-run `just link`.
+
 ## Repository Structure
 
 ```text
+Justfile          # link / unlink / status recipes for local development
 skills/
   english-swe-daily/
     SKILL.md
