@@ -59,6 +59,36 @@ Prerequisites:
 - An Ant-Ling/Ling key (`LING_API_KEY`, in a shell rc or environment
   variable) — only needed when enabling Ring
 
+### `youtube-toolkit`
+
+Downloads YouTube videos with `yt-dlp` and post-processes them with `ffmpeg`:
+fetch best-quality streams, convert containers (e.g. AV1/webm → H.264 mp4),
+extract audio, and burn in translated subtitles with a translator watermark.
+
+It is macOS-first and bakes in the gotchas learned the hard way — chiefly that
+Homebrew's lean `ffmpeg` ships without libass/drawtext (so subtitle burn-in
+needs `ffmpeg-full`), that YouTube auto-captions are overlapping rolling cues
+that must be re-segmented before they read cleanly, and that styling via an ASS
+file avoids the `force_style` comma-parsing trap. Two helper scripts do the
+deterministic work: `install-tools.sh` and `burn-subs.sh`.
+
+Install:
+
+```bash
+npx skills add https://github.com/wquguru/skills --skill youtube-toolkit
+```
+
+Ask for help with prompts like:
+
+- "Download this YouTube video to ~/Downloads."
+- "Convert it to mp4."
+- "Add Chinese subtitles and a @handle 翻译 watermark."
+
+Prerequisites:
+
+- Homebrew (macOS) or apt/pip (Linux)
+- `yt-dlp` and a libass-enabled `ffmpeg` — `install-tools.sh` sets both up
+
 ## Repository Structure
 
 ```text
@@ -72,6 +102,14 @@ skills/
     references/
       config-templates.md
       troubleshooting.md
+  youtube-toolkit/
+    SKILL.md
+    scripts/
+      install-tools.sh
+      burn-subs.sh
+    references/
+      installation-and-recipes.md
+      translate-and-burn.md
 ```
 
 ## License
