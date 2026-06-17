@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Compat Sync"
+  short_description: "Keep Claude and Codex repo instructions aligned"
+  default_prompt: "Use $agent-compat-sync to make this repository compatible between Claude and Codex."
