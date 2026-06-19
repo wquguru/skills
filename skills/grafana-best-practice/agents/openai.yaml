@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grafana Best Practice"
+  short_description: "Review and maintain Grafana dashboards, alerts, and the Telegraf/InfluxDB stack safely"
+  default_prompt: "Use $grafana-best-practice to review, organize, deploy, and verify these Grafana dashboards and alert rules."
