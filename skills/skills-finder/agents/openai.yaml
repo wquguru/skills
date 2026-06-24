@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skills Finder"
+  short_description: "Find skills and adopt only security-audited safe ones"
+  default_prompt: "Use $skills-finder to find a skill for <task> and only install ones that pass the security audit."
