@@ -63,17 +63,32 @@ while IFS=$'\t' read -r repo ref inc; do
   } >> "$lock_tmp"
   for p in "${paths[@]}"; do
     src="$work/$p"
-    name="$(basename "$p")"
+    base="$(basename "$p")"
+    # External skills get a 3rd- prefix so they're easy to spot and invoke
+    # apart from the self-written skills in ./skills/.
+    name="3rd-$base"
     if [ ! -f "$src/SKILL.md" ]; then
       echo "  ✗ $p — no SKILL.md, skipping"
       continue
     fi
-    if [ -d "$repo_root/skills/$name" ]; then
-      echo "  ✗ $name — collides with self-written skills/$name, skipping"
+    if [ -d "$repo_root/skills/$name" ] || [ -d "$repo_root/skills/$base" ]; then
+      echo "  ✗ $name — collides with self-written skills/, skipping"
       continue
     fi
     rm -rf "${ext_dir:?}/$name"
     cp -R "$src" "$ext_dir/$name"
+    # Rewrite the SKILL.md frontmatter name to the prefixed dir name, so the
+    # Skill tool lists it as 3rd-… too (not just the symlinked directory).
+    python3 - "$ext_dir/$name/SKILL.md" "$name" <<'PY'
+import sys, re
+path, newname = sys.argv[1], sys.argv[2]
+text = open(path, encoding="utf-8").read()
+new, n = re.subn(r'(?m)^name:[ \t]*\S.*$', f'name: {newname}', text, count=1)
+if n == 0:
+    sys.stderr.write(f"  ! {path} — no frontmatter name: line to rewrite\n")
+else:
+    open(path, "w", encoding="utf-8").write(new)
+PY
     managed+=("$name")
     echo "  ✓ $name"
     echo "  skill: $name" >> "$lock_tmp"

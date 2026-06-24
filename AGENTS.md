@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository is a collection of Agent Skills. Self-authored skills live in `skills/<skill-name>/`, and each skill must include a `SKILL.md`. Optional skill resources belong under the same skill folder, commonly `scripts/`, `references/`, `assets/`, and `agents/openai.yaml`. Third-party vendored skills are declared in `external.yml`, materialized into `external/`, and pinned in `external.lock`. Site files for the public index live at the repository root (`index.html`, `styles.css`).
+This repository is a collection of Agent Skills. Self-authored skills live in `skills/<skill-name>/`, and each skill must include a `SKILL.md`. Optional skill resources belong under the same skill folder, commonly `scripts/`, `references/`, `assets/`, and `agents/openai.yaml`. Third-party vendored skills are declared in `external.yml`, materialized into `external/` under a `3rd-` name prefix (e.g. `3rd-dashboarding`), and pinned in `external.lock`. Site files for the public index live at the repository root (`index.html`, `styles.css`).
 
 ## Build, Test, and Development Commands
 

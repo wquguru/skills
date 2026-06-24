@@ -7,8 +7,10 @@
 # so this repo stays purely self-written and free of third-party licenses.
 #
 # Each source: a repo, a ref (branch/tag/commit — pin a tag or SHA for
-# reproducibility), and the sub-paths to pull (the dir basename becomes the
-# skill name). Run `just vendor` after editing, then `just link`.
+# reproducibility), and the sub-paths to pull. The dir basename, prefixed with
+# `3rd-`, becomes the skill name (e.g. dashboarding -> 3rd-dashboarding) so
+# vendored skills are easy to spot apart from the self-written ones in ./skills/.
+# Run `just vendor` after editing, then `just link`.
 
 sources:
   - repo: https://github.com/grafana/skills

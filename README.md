@@ -116,16 +116,20 @@ Third-party skills from other repos are **not** copied in — they are vendored
 separately so this repo stays purely self-written and free of foreign licenses:
 
 1. Declare sources in `external.yml` — a repo, a `ref` (branch/tag/commit), and
-   the sub-paths to pull (each dir's basename becomes the skill name).
+   the sub-paths to pull. Each dir's basename, prefixed with `3rd-`, becomes the
+   skill name (e.g. `dashboarding` → `3rd-dashboarding`).
 2. `just vendor` shallow/sparse-clones each source, copies the named skill dirs
-   into `external/` (git-ignored), and records the exact upstream commit SHA in
-   `external.lock`.
+   into `external/` (git-ignored) under their `3rd-`-prefixed names, rewrites each
+   `SKILL.md` frontmatter `name` to match, and records the exact upstream commit
+   SHA in `external.lock`.
 3. `just link` symlinks them alongside the self-written skills.
 
-Only `external.yml` + `external.lock` are committed; the vendored code is not.
-Re-run `just vendor` any time to refresh (or after pinning a `ref`). A name that
-would collide with a self-written `skills/<name>` is skipped; entries removed from
-`external.yml` are pruned from `external/` on the next `just vendor`.
+The `3rd-` prefix makes vendored skills easy to spot and invoke apart from the
+self-written ones in `skills/`. Only `external.yml` + `external.lock` are
+committed; the vendored code is not. Re-run `just vendor` any time to refresh (or
+after pinning a `ref`). A name that would collide with a self-written
+`skills/<name>` is skipped; entries removed from `external.yml` are pruned from
+`external/` on the next `just vendor`.
 
 ## Repository Structure
 
@@ -154,9 +158,10 @@ skills/           # self-written skills (published)
       installation-and-recipes.md
       translate-and-burn.md
 external/          # vendored third-party skills (git-ignored; just vendor)
-  dashboarding/
-  alerting-irm/
-  grafana-oss/
+  3rd-dashboarding/
+  3rd-alerting-irm/
+  3rd-grafana-oss/
+  3rd-transitions-dev/
 ```
 
 ## License
