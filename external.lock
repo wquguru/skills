@@ -3,7 +3,12 @@
 
 https://github.com/grafana/skills
   ref: main
-  commit: 0198138c75512f9b2adfb27b49aebce87c3ccfdf
+  commit: e8424d242290be2ae187a74b5fd854174f0c5411
   skill: dashboarding
   skill: alerting-irm
   skill: grafana-oss
+
+https://github.com/jakubantalik/transitions-dev
+  ref: main
+  commit: 038b0bdc75375c2beed51d1e824c98cdc7b86f8c
+  skill: transitions-dev

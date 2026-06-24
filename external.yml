@@ -17,3 +17,8 @@ sources:
       - skills/grafana-core/dashboarding   # dashboard JSON: panels, gridPos, overrides, thresholds, transformations
       - skills/grafana-core/alerting-irm   # Grafana-managed alert rules (refId A/B/C), contact points, notification templates
       - skills/grafana-core/grafana-oss    # provisioning, datasources (incl. InfluxDB/Flux), panel-types, HTTP API
+
+  - repo: https://github.com/jakubantalik/transitions-dev
+    ref: main
+    include:
+      - skills/transitions-dev   # 12 portable CSS transitions (t-* selectors, semantic custom props, reduced-motion guards)
