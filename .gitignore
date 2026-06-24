@@ -4,3 +4,5 @@
 # Only external.yml + external.lock are tracked; the upstream code is not, so this
 # repo stays purely self-written.
 /external/
+
+.idea/
