@@ -3,23 +3,44 @@
 Each smell below has a **quantitative trigger** (so findings are evidence, not vibes), a
 **why it hurts**, and a **fix**. Run them top to bottom; cite the actual numbers you measure.
 
-Sizing baseline first:
+Sizing + recency baseline first:
 
 ```bash
 wc -l -w -c <memory-dir>/*.md          # every memory/state file
 wc -c <index-file>                      # MEMORY.md (Claude) or the loop's STATUS file
+ls -lT <memory-dir>/*.md                # last-modified time per file (recency signal)
 ```
 
 A healthy "one fact" memory file is roughly **0.5–3 KB**. Anything an order of magnitude past
 that, in a file that's supposed to hold one fact, is the prime suspect.
+
+**Translate size into recurring token cost** — that's what actually hurts. The index file and
+any recalled memory are re-read *every iteration*, so a rough `tokens ≈ bytes / 4` (English;
+~2 for CJK-heavy) makes the tax concrete: an 8 KB index line ≈ ~2k tokens **per run, forever**.
+Report the per-iteration cost, not just the byte count — it's the number that justifies the
+cleanup.
+
+**Use last-modified as a staleness signal.** A memory file untouched for many iterations while
+the loop kept running is either (a) settled fact (fine) or (b) abandoned/stale context nobody
+re-validated. Cross-check the *claims* in long-dormant files against current reality (smell #7).
+Conversely, a file that's rewritten *every single run* is the append-bloat signature (smell #1).
 
 ---
 
 ## 1. Memory-as-changelog
 
 **Trigger:** a single memory/state file that (a) is large (≫3 KB for a "one fact" file), and
-(b) grows every iteration (compare across git history of the file, or just read it — it reads
-like a dated log, not a fact). Confirm with marker density:
+(b) grows every iteration. Confirm growth from history rather than guessing — if the file is
+git-tracked, its size trend over recent commits is the proof:
+
+```bash
+git log --format='%h %ad' --date=short -- <file> | head     # how often it changes
+for c in $(git log --format=%h -5 -- <file>); do \
+  printf "%s %s\n" "$c" "$(git show $c:<file> 2>/dev/null | wc -c)"; done  # size at each
+```
+
+A size that only ever climbs, touched on nearly every run, is the append-bloat signature. Then
+confirm with marker density:
 
 ```bash
 for w in DONE deferred done "✅" "⏳" "PROD" "Phase" queue; do

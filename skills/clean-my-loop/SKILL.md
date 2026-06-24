@@ -118,6 +118,23 @@ risk explicitly**: if you cleaned files but the loop's prompt still says "append
 run", the next fire re-bloats them — so the prompt fix in Step 5 is what makes the cleanup
 durable. If the user declined the prompt edit, say so plainly.
 
+## External references (prior art, security-clean — read for ideas, don't run)
+
+This skill's niche — auditing the *loop* (its prompt, exit conditions, and run-history), not
+just a static memory file — appears unoccupied. But three adjacent, MIT/local-only projects are
+worth reading when you need depth on the memory half:
+
+- **`wan-huiyan/memory-hygiene`** (GitHub) — the closest analogue: tiered memory architecture,
+  index truncation-risk thresholds, inline-content-extraction, and an approval gate before
+  destructive edits. Best single reference for the memory-file cleanup mechanics.
+- **`/slim` self-audit** (ai-muninn blog) — per-turn token-cost measurement and the
+  index→one-line-pointer + subfile shrink mechanic (mirrors Step 5's "shrink the index").
+- **Pensyve** (`major7apps/pensyve`) — FSRS decay scoring for "stale memory." Borrow the
+  recency-decay *concept* for smell #7; don't pull in its runtime.
+
+Avoid hosted "memory hygiene" SaaS that ask you to paste memory contents off-machine, and don't
+copy any `rm -rf`/service-restart commands from third-party SKILL.md files verbatim.
+
 ## Boundaries
 
 - **Don't** run the loop's actual work, deploy, or rotate secrets — this skill cleans the
