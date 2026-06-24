@@ -32,8 +32,14 @@ Notification delivery (Telegram, but the lesson generalizes):
   string-typed (Grafana 10.x numeric-chatid bug).
 - A Telegram group upgraded to a supergroup CHANGES its chat_id: the old id 400s
   `group chat was upgraded to a supergroup chat`; the new `-100…` id is in the
-  error's `parameters.migrate_to_chat_id`. Fix it once in the env — the same
-  creds usually feed other app pushes too.
+  error's `parameters.migrate_to_chat_id`. Do NOT guess the new id by string
+  transform (`-100`+old-digits is a myth — Telegram allocates the supergroup id
+  independently; a real migration went `-5273195481` → `-1004319761133`). Read the
+  authoritative id from the Bot API `getUpdates` (look for `migrate_to_chat_id`,
+  or the new `chat.id` of type `supergroup`).
+  Fix it in EVERY store that holds the chat_id — the same group usually feeds the
+  Grafana env, the app env, AND CI notifiers, each with its own copy (see the
+  audit bullet below).
 - **Forum/topic supergroups need `message_thread_id`.** Enabling Topics on a group
   converts it to a supergroup (so the chat_id changes too, per the bullet above) and
   gives each topic a numeric thread id. A message sent WITHOUT `message_thread_id`
@@ -45,16 +51,45 @@ Notification delivery (Telegram, but the lesson generalizes):
   empty/`0` thread id is rejected. Find a topic's thread id from the Bot API
   `getUpdates` (`message.message_thread_id` / `forum_topic_created`) or a get-id bot.
 - **Audit EVERY Telegram sender, not just Grafana.** A chat_id or topic change breaks
-  every place that posts to the group — Grafana alerts, the app's own notification
-  pushes, and ops "send test" buttons can each have their own `sendMessage`. Grep the
-  whole repo (`sendMessage`, `api.telegram.org`) and update each independently; the
-  Grafana contact point does NOT cover app-level pushes, and each needs its own
-  `message_thread_id`.
+  every place that posts to the group across THREE distinct sender classes, each with
+  its own copy of the chat_id and its own fix location:
+  1. **Grafana contact point** — the provisioned/generated `chatid` (+ `message_thread_id`).
+  2. **App-level pushes** — the service's own `sendMessage` / "send test" buttons, reading
+     the chat_id from the app env.
+  3. **CI / GitHub Actions notifiers** — e.g. `appleboy/telegram-action` steps in deploy/
+     release/nightly workflows, where the chat_id is a **GitHub repo/org variable**
+     (`to: ${{ vars.TELEGRAM_CHAT_ID }}`), fixed in repo Settings → Secrets and variables →
+     Actions, NOT in any env file.
+  Grep the whole repo with terms that hit all three — `sendMessage`, `api.telegram.org`,
+  AND `telegram-action`/`TELEGRAM_CHAT_ID` (CI uses `to:`, not `sendMessage`, so the first
+  two terms miss it). Update each independently; the Grafana contact point does NOT cover
+  app-level or CI pushes, and each topic-routed sender needs its own `message_thread_id`.
 - **Inline keyboard button URLs must be public http(s).** Telegram rejects buttons that
   point at internal hostnames (e.g. a Docker service name, `http://grafana:3000/...`)
   with `400 ... button URL ... is invalid: Wrong HTTP URL`, which fails the whole send.
   Build button URLs from the public base (e.g. Grafana's `GF_SERVER_ROOT_URL`), not the
   in-network address.
+
+Notification message templates (body composition, not just delivery):
+
+- **Render a `group_by` label ONCE in the header, not in every rule's summary.** When the
+  notification policy groups by a label (e.g. `instance`/shard/env), every alert in a single
+  message shares that value — so emit it once from `.CommonLabels.<label>` in the template
+  header instead of baking `(instance {{ $labels.x }})` into each rule's `summary` annotation.
+  The per-rule version duplicates the value inside the body AND copies the same boilerplate
+  across every rule (a real DRY cost — easily 20+ identical suffixes). Guard it with
+  `{{ with .CommonLabels.<label> }} · 📍 <b>{{ . }}</b>{{ end }}` so alerts that legitimately
+  lack the label (host/docker series carry no `instance`) silently omit the segment rather than
+  printing an empty one. (`.GroupLabels.<label>` works too; both are populated when the label
+  is a group_by key.)
+- **Telegram HTML has no text color.** `parse_mode: HTML` supports only `<b> <i> <u> <s> <code>
+  <pre> <a>` — a request to "make X red / highlight X" is not achievable; emphasize with `<b>`
+  plus an emoji marker (📍 for the instance, 🔴/🟡/⚪ by severity). Markdown is likewise
+  color-less.
+- **The resolved-only path needs its own context header.** If the env/instance header is
+  rendered inside `{{ if gt (len .Alerts.Firing) 0 }}`, a message that contains ONLY resolved
+  alerts prints no env/instance — a silent context gap (which trader resolved?). Add the same
+  `{{ with .CommonLabels.<label> }}…{{ end }}` segment to the `🟢 Resolved` subheader too.
 
 Verify alerting against the live system, not file diffs:
 

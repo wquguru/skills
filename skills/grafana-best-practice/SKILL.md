@@ -19,6 +19,8 @@ Use this skill to make Grafana dashboards readable, correctly aggregated, naviga
    - Legend placement, values, sorting, and display names.
    - Long labels leaking into stat cards or legends, such as `environment`, `project`, `url`, or raw Prometheus family names.
    - Bar chart sorting and limits.
+   - Table column headers — no field-wide `defaults.displayName` (it overrides every column); columns renamed via the `organize` transform.
+   - Multi-bucket / `union()` queries — every `filter()` pushed inside each `from()` (predicate pushdown), never after `union()`.
    - Anonymous/read-only access if the dashboard is public.
 3. Patch dashboard JSON narrowly and preserve existing panel intent.
 4. Validate locally with JSON parsing, repository tests, and static checks.
@@ -118,6 +120,34 @@ When using `map()` to turn labels into friendly series names, finish with a boun
   |> group(columns: ["instance", "_field"])
 ```
 
+The InfluxDB Flux datasource IGNORES `legendFormat` — series names come from the frame's group-key labels plus the panel's `displayName` (`${__field.labels.x}`). To name or split synthetic series, add the value as a tag AND make it a group key so it becomes a real label, then render via `displayName` (a bare `set()` not in the group key is NOT exposed as a label):
+
+```flux
+  |> set(key: "leg", value: "spot")     // not a label on its own
+  |> group(columns: ["venue", "leg"])   // group key -> real label -> ${__field.labels.leg}
+```
+
+Filter data-quality-suspect rows (error / stale / thin / "unsafe" states) out of headline stat, leaderboard, and min/max-extreme panels — otherwise the "max" is a noise artifact, not a signal. It also bounds cost: excluding churning bad-status series cuts the rows an extremes query scans.
+
+## Long-Term Retention And Downsampling
+
+For data kept beyond a few weeks, run a dual-bucket scheme: a raw bucket (short retention) plus a downsampled long-term bucket fed by a scheduled task (InfluxDB task: `aggregateWindow(every: 5m, fn: mean)` raw → 1y bucket; provisioned reproducibly, and since `initdb.d` only runs on a fresh volume, the provisioning script must be idempotent and hand-applied once to a pre-existing volume). Downsample only analytical/business series; leave ops/infra (cpu/mem/docker/liveness) on the raw bucket — nobody needs a year of CPU%. DROP churning tags in the rollup (status flags, "best route" tags): they dominate long-term cardinality and the long-range view is for trends, not live filtering. For sparse per-event series (funding settlements, fills) MIRROR raw 1:1 with a wide idempotent lookback instead of aggregating — there is nothing to compress, and a narrow rolling window permanently drops any point a run missed.
+
+To make ONE panel span both tiers, `union()` raw + downsampled:
+
+```flux
+src = (b) => from(bucket: b)
+  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
+  |> filter(fn: (r) => r._measurement == "carry_pair")
+  |> filter(fn: (r) => r._field == "mid_basis_bps")
+  |> filter(fn: (r) => r["asset"] == "${asset}")    // ALL predicates go IN HERE
+union(tables: [src(b: v.defaultBucket), src(b: "carrywatch_1y")])
+  |> group(columns: ["venue"])
+  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)
+```
+
+CRITICAL — push every `filter()` INSIDE each `from()` BEFORE `union()`. A `filter()` placed AFTER `union()` is NOT pushed down to storage: each `from()` then full-scans the WHOLE bucket into memory before filtering, which over a high-cardinality measurement OOMs/pegs the database and can wedge a shared host (sshd included — recovery may mean waiting out the swap-thrash). With pushdown the union costs the same as the single-bucket query. Corollary: never run an unfiltered/heavy ad-hoc Flux query against a shared production datasource; validate heavy queries with tight filters + `count()` first, and prefer restarting the DB container to free a runaway query over waiting.
+
 ## Panel Readability Standards
 
 Stat and gauge panels:
@@ -151,9 +181,14 @@ Bar charts:
 - For counts, volume, holding time, or pressure, sort descending.
 - Hide legends when category labels already carry the meaning.
 
+Table panels:
+
+- NEVER set `fieldConfig.defaults.displayName` on a table — it overrides EVERY column's header to that one string (so Venue / Asset / Status all render as e.g. "funding APR"). Rename columns in the `organize` transform's `renameByName`; color/format per column via field overrides matched `byName` on the renamed value.
+- Flux: `pivot(rowKey: [...], columnKey: ["_field"], valueColumn: "_value")` turns fields into columns, then `organize` to order + rename.
+
 ## Alerting Rules And Notifications
 
-When configuring or debugging provisioned alert rules, contact points, or notification delivery (Telegram chat_id / supergroup / topic `message_thread_id`, parse-mode escaping, live rule-health and delivery verification), read [references/alerting.md](references/alerting.md).
+When configuring or debugging provisioned alert rules, contact points, or notification delivery (Telegram chat_id / supergroup / topic `message_thread_id`, parse-mode escaping, message-template/body composition — group-label-in-header DRY, no-text-color emphasis, resolved-only context — live rule-health and delivery verification), read [references/alerting.md](references/alerting.md).
 
 ## Deployment And Verification
 
