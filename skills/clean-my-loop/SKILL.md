@@ -50,6 +50,13 @@ sizes (`wc -l -w -c`). The surface is typically:
 | Instruction files | `~/.claude/CLAUDE.md` + `<repo>/CLAUDE.md` | `~/.codex/AGENTS.md` + `<repo>/AGENTS.md` |
 | Run history (for forensics) | `~/.claude/projects/<enc>/*.jsonl` | `~/.codex/sessions/` or history logs |
 
+**Anchor each artifact to its own last-touch date, not a shared one.** The surface decays on
+*independent* cadences — a memory file rewritten yesterday and a CLAUDE.md untouched for months
+need different staleness windows, and a single global date gives wrong reads for both. Per
+artifact, record its last-modified time: `git log -1 --format=%ai -- <path>` for tracked files,
+`stat -f %Sm <path>` (mtime) for untracked ones like `~/.claude/.../memory/*.md`. That per-file
+date is the window you measure churn and staleness against in Step 3.
+
 ### 3. Diagnose against the decay heuristics
 
 Run the checks in [references/detection-heuristics.md](references/detection-heuristics.md).
@@ -73,6 +80,21 @@ Each smell has a quantitative trigger and a fix. The high-value ones:
 "queue/count ahead" number rising monotonically, real progress (deploys/merges) stalled. Cite
 concrete numbers (file sizes, repeat counts, queue depth) in your findings — the
 [detection-heuristics](references/detection-heuristics.md) ref has the extraction one-liners.
+
+**Scale how much history you read to how much the loop has churned.** A loop that fired 200
+times since its last clean hides its decay differently than one that fired 8 times — and
+reading only the most recent few sessions samples the *tail*, exactly where a degenerate loop
+looks calmest. Count the iterations in the window (sessions since the last-touch date from Step
+2), then sample accordingly:
+
+| iterations since last clean | how to read run history |
+|---|---|
+| < 10 | deep-read every session |
+| 10 – 49 | deep-read the latest ~10, spot-check the oldest 2–3 for when the smell began |
+| ≥ 50 | sample across the whole window (early / middle / recent), not just the tail; the early sessions date the onset |
+
+When you sample rather than read exhaustively, **say what you skipped** in your findings — a
+silent tail-only read reads as "the loop is fine lately" when the bloat is upstream.
 
 ### 4. Ask the key judgments (AskUserQuestion)
 
