@@ -24,3 +24,8 @@ sources:
     ref: main
     include:
       - skills/transitions-dev   # 12 portable CSS transitions (t-* selectors, semantic custom props, reduced-motion guards)
+
+  - repo: https://github.com/vercel-labs/agent-browser
+    ref: main
+    include:
+      - skills/agent-browser   # browser-automation CLI for AI agents: navigate, fill forms, click, screenshot, scrape, test web apps (loads core workflow at runtime via `agent-browser skills get core`)

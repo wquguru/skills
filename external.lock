@@ -12,3 +12,8 @@ https://github.com/jakubantalik/transitions-dev
   ref: main
   commit: 038b0bdc75375c2beed51d1e824c98cdc7b86f8c
   skill: 3rd-transitions-dev
+
+https://github.com/vercel-labs/agent-browser
+  ref: main
+  commit: ed2e10598c9064aecfaeb7cf21b540684db4be2c
+  skill: 3rd-agent-browser
