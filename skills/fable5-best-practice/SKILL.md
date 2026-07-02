@@ -30,6 +30,11 @@ Use the cheapest model that can reliably meet the acceptance criteria. Upgrade o
 when cheaper execution misses a specific criterion, or when the task is already
 high-stakes enough that a weaker pass would be false economy.
 
+When migrating older prompts or skills to Fable 5, assume some scaffolding written for
+weaker models may now be harmful. Keep instructions that protect safety, scope,
+budget, data, or business judgment; remove instructions that merely force the model to
+re-explain, over-plan, over-structure, or expose reasoning.
+
 ## When to use Fable 5
 
 Reach for Fable 5 when the work has at least one of these properties:
@@ -61,6 +66,15 @@ Prefer goals over step-by-step micromanagement:
 Use compact instructions. Old prompts written to compensate for weaker models can
 over-constrain Fable 5. Remove brittle scaffolding, excessive persona text, and
 unneeded micro-rules unless they protect safety, budget, data, or business judgment.
+
+When there is enough information to act, act. Do not re-derive settled facts, reopen
+decisions the user has already made, survey options you will not pursue, or end with a
+promise to do work that can be done now.
+
+Keep higher-effort runs scoped. Do not add features, broad refactors, defensive
+backups, feature flags, compatibility shims, abstractions, or validation beyond the
+task unless the evidence shows they are necessary. Validate at system boundaries such
+as user input and external APIs; trust internal framework guarantees where appropriate.
 
 When the user is asking a question, sharing a problem, or thinking out loud rather
 than requesting a change, deliver an assessment and stop. Do not apply fixes until
@@ -142,7 +156,8 @@ questions and continue with reasonable assumptions when the risk is low.
 
 Use effort deliberately:
 
-- `low`: routine classification, extraction, and other cheap bounded work.
+- `low`: routine classification, extraction, reliable bounded work, and other
+  cheap tasks where cost and latency matter.
 - `medium`: interactive exploration, quick design feedback, simple debugging, or
   when latency and cost matter more than deep search.
 - `high`: default for serious coding, architecture, planning, research synthesis,
@@ -161,7 +176,13 @@ act on.
 
 For long runs, set explicit task budgets where available: time, token, cost, tool-call
 limits, maximum files touched, maximum attempts, and stop conditions. A strong Fable 5
-prompt says both what to achieve and when to stop.
+prompt says both what to achieve and when to stop. If a run succeeds but feels slower
+than needed, lower effort or add narrower checkpoints before changing the task.
+
+Expect longer turns. At high effort, individual requests can run for many minutes, and
+autonomous jobs can run for hours. Integration harnesses should support streaming,
+longer timeouts, asynchronous polling, and user-facing progress indicators before
+moving heavy workflows to Fable 5.
 
 At high effort, add a short scope-control instruction when the task is narrow: do not
 add features, broad refactors, abstractions, compatibility shims, or speculative error
@@ -228,12 +249,21 @@ unverified. If tests failed or a step was skipped, say so plainly.
 Do not treat "I plan to run X" as progress. If the agent says it will run a tool and
 the action is allowed, it should run the tool before ending the turn.
 
+If the agent may stop early with a plan instead of action, add:
+
+```text
+Before ending your turn, check whether your last message is a plan, promise, question,
+or list of next steps. If the original request allows the work and no user-only input
+is required, do the work now with tools.
+```
+
 ## Use memory carefully
 
-For multi-session work, ask Fable 5 to maintain a short persistent memory file such
-as `learnings.md` or `state.md`. Keep it as a living snapshot, not a changelog. For
-repository loops with recurring lessons, a `notes/` directory with one durable lesson
-per file can work better than a single growing document.
+For multi-session work, ask Fable 5 to maintain short persistent memory, such as
+`state.md` for project status and a `learnings/` folder when lessons need to persist
+across tasks. Keep memory as a living snapshot, not a changelog. For repository loops
+with recurring lessons, a `notes/` directory with one durable lesson per file can work
+better than a single growing document.
 
 Recommended shape:
 
@@ -259,6 +289,11 @@ Each loop should update this file by replacing stale content, not appending a di
 If the memory grows beyond what a human would reread, compact it. Do not duplicate
 facts already in the repo or chat. Update existing notes before creating near-duplicates,
 and delete notes that later evidence proves wrong.
+
+For durable lessons, store one lesson per file with a one-line summary at the top.
+Record confirmed corrections and reusable approaches, including why they matter. Do
+not save what the repository or chat already records; update duplicate notes instead
+of creating more files, and delete notes that turn out to be wrong.
 
 ## Model mix and delegation
 
@@ -337,10 +372,12 @@ replacement for explicit acceptance criteria, budgets, and stop conditions.
 When delegating, pass the goal, constraints, plan, acceptance criteria, and exact
 handoff artifacts. Do not pass a vague "continue this" instruction.
 
-Prefer async delegation: dispatch independent subtasks, keep the orchestrator moving,
-and intervene only when a subagent lacks context or is drifting. Use fresh-context
-verifier agents for acceptance checks rather than asking the executing context to
-critique itself.
+Fable 5 is strong at parallel subagent orchestration. Delegate independent subtasks
+early, keep the orchestrator moving, and prefer asynchronous check-ins over blocking
+on the slowest worker. For recurring workstreams, reuse long-lived subagents when
+their cached context is useful; intervene if they drift or lack needed evidence. Use
+fresh-context verifier agents for acceptance checks rather than asking the executing
+context to critique itself.
 
 ## Safeguards, refusals, and fallback
 
@@ -358,14 +395,43 @@ For integrations:
   work.
 - Do not try to bypass Fable 5 safeguards. Reformulate toward the legitimate goal or
   stop.
+- Do not instruct Fable 5 to reproduce, transcribe, or expose its hidden reasoning.
+  If an application needs reasoning visibility, use structured adaptive-thinking
+  outputs where available and surface user-facing progress separately.
+
+## User communication
+
+Fable 5 can over-explain after long tool runs. In final responses, lead with the
+outcome: what happened, what was found, or what changed. Add only details that affect
+what the reader should trust or do next.
+
+Prefer clear sentences over compressed shorthand. Avoid arrow chains, unexplained
+labels, dense implementation vocabulary, and references to unseen reasoning. If the
+user has not watched the run, re-ground them in the result rather than continuing the
+private working thread.
+
+Pause for the user only when the work genuinely requires them: destructive or
+irreversible actions, real scope changes, external commitments, or information only
+they can provide. For reversible actions that follow from the original request,
+proceed and verify.
 
 If a harness surfaces remaining context budget to the model, avoid making the number
 part of the task framing. If it must be visible, explicitly say not to stop, summarize,
 or hand off solely because of context limits.
 
-For long asynchronous products, consider a `send_to_user`-style tool that displays a
-message verbatim without ending the agent turn. Use it only for partial deliverables,
-specific progress updates, or user-facing text that must not be summarized.
+## Long-run UX tools
+
+For long asynchronous agents, consider adding a `send_to_user`-style tool that displays
+a message verbatim without ending the agent turn. Use it only for partial deliverables,
+direct answers to questions asked mid-run, specific progress updates, or user-facing
+text that must not be summarized. Do not use it for narration or internal reasoning.
+
+Pair the tool with an explicit instruction:
+
+```text
+Between tool calls, when you have content the user must read verbatim, call
+send_to_user with that content. Use send_to_user only for user-facing content.
+```
 
 ## Prompt pattern
 
