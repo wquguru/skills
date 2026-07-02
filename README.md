@@ -167,6 +167,8 @@ scripts/
 skills/           # self-written skills (published)
   fable5-best-practice/
     SKILL.md
+    references/
+      claude-model-routing.md
   english-swe-daily/
     SKILL.md
     references/

@@ -1,6 +1,6 @@
 ---
 name: fable5-best-practice
-description: Guides agents in scoping, prompting, budgeting, supervising, and validating Claude Fable 5 work for long-horizon reasoning, design, coding, research, and agentic workflows.
+description: Guides agents in scoping, prompting, budgeting, supervising, validating, and routing Claude Fable 5 work across Fable, Opus, and Sonnet for long-horizon reasoning, design, coding, research, and agentic workflows.
 ---
 
 # fable5-best-practice
@@ -195,20 +195,35 @@ If the memory grows beyond what a human would reread, compact it.
 
 ## Model mix and delegation
 
-Use Fable 5 for the scarce judgments:
+Treat cost as deployment-specific. Official API sticker prices, batch discounts,
+prompt caching, user subscriptions, plan entitlements, and internal quotas can produce
+very different marginal costs. Maintain a local routing table with three scores:
+intelligence, taste, and effective marginal cost. For deliverables, prioritize
+intelligence and taste before cost; use cost mainly as a tie-breaker once quality is
+good enough.
 
-- problem framing and question selection
-- architecture and data model decisions
-- critical abstractions and migration strategy
-- evaluation design and acceptance criteria
-- pre-mortems, risk analysis, and review of final work
+Quick Claude routing:
 
-Delegate routine execution to cheaper or faster models when available:
+| Model | Default role | Avoid using for |
+| --- | --- | --- |
+| Sonnet | Fast execution, exploration, long tool loops, browser/computer-use, mechanical implementation | Final arbitration, high-taste deliverables, ambiguous architecture calls |
+| Opus | Taste-heavy craft, UI/prose/API design, code quality review, experienced implementation | Bulk token burn, simple searches, routine plumbing |
+| Fable 5 | Hard battles: deepest reasoning, long-horizon autonomy, pre-mortems, high-stakes review, final arbitration | Cheap frequent tasks, raw codebase exploration, repetitive execution |
 
-- bulk implementation after Fable 5 has chosen the design
-- context compression and note cleanup
-- straightforward tests, formatting, documentation drafts, and repetitive edits
-- independent verifier passes
+These are defaults, not ceilings. Upgrade Sonnet to Opus when execution is adequate
+but taste, judgment, or review quality is lacking. Upgrade Opus to Fable 5 when the
+problem requires deeper autonomy, sustained decomposition, or final arbitration across
+conflicting evidence. When the user has granted a standing budget, upgrade without
+asking and record why the weaker model missed the acceptance criteria.
+
+Avoid Fable 5 and Opus for high-token, low-difficulty work even when the local
+marginal cost is low. Use Sonnet or scripts for repository exploration, grep-style
+investigation, bulk file reading, browser/computer-use plumbing, log triage, and
+deterministic transforms. Hand distilled evidence to Opus or Fable 5 for judgment.
+
+When designing a workflow, subagent tree, or model allocation policy, read
+`references/claude-model-routing.md` for the detailed routing matrix and handoff
+prompts.
 
 When delegating, pass the goal, constraints, plan, acceptance criteria, and exact
 handoff artifacts. Do not pass a vague "continue this" instruction.
