@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository is a collection of Agent Skills. Self-authored skills live in `skills/<skill-name>/`, and each skill must include a `SKILL.md`. Optional skill resources belong under the same skill folder, commonly `scripts/`, `references/`, `assets/`, and `agents/openai.yaml`. Third-party vendored skills are declared in `external.yml`, materialized into `external/` under a `3rd-` name prefix (e.g. `3rd-dashboarding`), and pinned in `external.lock`. Site files for the public index live at the repository root (`index.html`, `styles.css`).
+This repository is a collection of Agent Skills. Self-authored skills live in `skills/<skill-name>/`, and each skill must include a `SKILL.md`. Optional skill resources belong under the same skill folder, commonly `scripts/`, `references/`, `assets/`, and `agents/openai.yaml`. Third-party vendored skills are declared in `external.yml`, materialized into `external/` under a `3rd-` name prefix (e.g. `3rd-dashboarding`), and pinned in `external.lock`. Site files for the public index live at the repository root (`index.html`, `styles.css`, `assets/`).
 
 ## Build, Test, and Development Commands
 
@@ -17,6 +17,23 @@ There is no package build step. For a new or edited skill, run the system valida
 ```bash
 python3 ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/<skill-name>
 ```
+
+## Public Site & Deployment
+
+The public site is a static GitHub Pages index at `https://wquguru.github.io/skills/`. Keep `main` as the source of truth for site edits, and publish from the `gh-pages` branch root with `.nojekyll` preserved.
+
+Prefer branch-based Pages for this repo. Do not reintroduce an Actions-based Pages workflow unless intentionally changing the deploy strategy; `actions/deploy-pages` has a 10 minute deploy timeout, and repeated `deployment_queued` statuses usually mean a GitHub Pages backend queue issue rather than a site-code problem.
+
+When a deployment stalls, inspect Pages state before changing site files:
+
+```bash
+gh api repos/wquguru/skills/pages
+gh run list --limit 8
+gh api 'repos/wquguru/skills/deployments?per_page=8'
+gh api repos/wquguru/skills/deployments/<id>/statuses
+```
+
+To publish new site changes, update `gh-pages` from `origin/main` in a temporary worktree, keep `.nojekyll`, push `gh-pages`, and verify the live URL. Treat deployment as complete only after Pages reports `built`, the Pages run succeeds, the live HTML contains the expected title/content, and referenced assets return 200.
 
 ## Coding Style & Naming Conventions
 

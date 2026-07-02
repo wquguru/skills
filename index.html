@@ -8,44 +8,47 @@
       name="description"
       content="A growing registry of first-party and third-party Agent Skills for Codex, Claude Code, automation, observability, media workflows, and developer operations."
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="icon" href="assets/skill-icon.svg" type="image/svg+xml" />
+    <link rel="preload" href="assets/fonts/TikTokSans.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="assets/fonts/GeistMono[wght].ttf" as="font" type="font/ttf" crossorigin />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="grid-overlay" aria-hidden="true"></div>
+    <div class="cursor-light" aria-hidden="true"></div>
+    <div class="scrollbar-ghost" aria-hidden="true"><span></span></div>
+
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="Agent Skills Registry home">
+      <a class="brand hover-frame" href="#top" aria-label="Agent Skills Registry home">
         <span class="brand-mark" aria-hidden="true"></span>
-        <span>Agent Skills</span>
+        <span>SKILLS.REGISTRY</span>
       </a>
       <nav class="site-nav" aria-label="Primary">
-        <a href="#first-party">First-party</a>
-        <a href="#third-party">Third-party</a>
-        <a href="#install">Install</a>
+        <a class="hover-frame" href="#first-party">FIRST-PARTY</a>
+        <a class="hover-frame" href="#third-party">THIRD-PARTY</a>
+        <a class="hover-frame" href="#install">INSTALL</a>
+        <button class="hover-frame" id="theme-toggle" type="button" aria-pressed="false">THEME[A]</button>
       </nav>
     </header>
 
     <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="eyebrow">Growing registry for practical agent work</p>
-          <h1 id="hero-title">A growing toolkit for real agent work.</h1>
-          <p class="lede">
-            This repository collects hands-on skills for Codex and Claude Code:
-            self-authored playbooks, audited local automations, and pinned
-            third-party modules that can be linked into both agents.
+      <section class="hero section-grid" aria-labelledby="hero-title">
+        <div class="hero-meta">
+          <p class="role">Codex &<br />Claude Code</p>
+          <p class="care">Local playbooks.<br />Pinned extensions.</p>
+          <p class="intro">
+            A personal registry for practical agent work: self-authored skills,
+            audited third-party modules, and the install loop that keeps both
+            agent homes in sync.
           </p>
-          <div class="hero-actions" aria-label="Primary actions">
-            <a class="button button-primary" href="#catalog">Browse catalog</a>
-            <a class="button button-secondary" href="https://github.com/wquguru/skills">
-              View GitHub
-            </a>
-          </div>
         </div>
+
+        <div class="hero-kicker" aria-hidden="true">skills</div>
+        <h1 id="hero-title" class="hero-title">
+          <span>Agent</span>
+          <span>skills for</span>
+          <span>real work.</span>
+        </h1>
 
         <figure class="hero-visual">
           <img
@@ -74,9 +77,9 @@
         </article>
       </section>
 
-      <section class="overview" aria-labelledby="overview-title">
+      <section class="overview section-grid" aria-labelledby="overview-title">
         <div>
-          <p class="eyebrow">How the registry is organized</p>
+          <p class="eyebrow">Registry structure</p>
           <h2 id="overview-title">One catalog, two sources of authority.</h2>
         </div>
         <div class="source-grid">
@@ -101,17 +104,17 @@
         </div>
       </section>
 
-      <section class="catalog" id="catalog" aria-labelledby="catalog-title">
+      <section class="catalog" id="first-party" aria-labelledby="first-party-title">
         <div class="section-head">
-          <p class="eyebrow">Catalog</p>
-          <h2 id="catalog-title">Self-authored skills</h2>
+          <p class="eyebrow">Local operating taste</p>
+          <h2 id="first-party-title">Self-authored skills</h2>
           <p>
-            These are the local skills that encode personal workflows, operating
-            taste, and hard-earned setup knowledge.
+            These encode personal workflows, hard-earned setup knowledge, and
+            automation habits that should be repeatable by an agent.
           </p>
         </div>
 
-        <div class="skill-grid" id="first-party">
+        <div class="skill-grid">
           <article class="skill-card">
             <div class="skill-topline">
               <span class="skill-type">Agent ops</span>
@@ -323,11 +326,18 @@ just add</code></pre>
     <footer class="site-footer">
       <p>
         Source of truth:
-        <a href="https://github.com/wquguru/skills/tree/main/skills">skills/</a>,
-        <a href="https://github.com/wquguru/skills/blob/main/external.yml">external.yml</a>,
-        and
-        <a href="https://github.com/wquguru/skills/blob/main/external.lock">external.lock</a>.
+        <a class="hover-frame" href="https://github.com/wquguru/skills/tree/main/skills">skills/</a>
+        <a class="hover-frame" href="https://github.com/wquguru/skills/blob/main/external.yml">external.yml</a>
+        <a class="hover-frame" href="https://github.com/wquguru/skills/blob/main/external.lock">external.lock</a>
       </p>
     </footer>
+
+    <div class="hud" aria-hidden="true">
+      <span id="clock">GMT-4 --:--</span>
+      <span id="coords">0000 X 0000 Y</span>
+      <span class="progress-shell"><span id="progress-bar"></span></span>
+    </div>
+
+    <script src="script.js" defer></script>
   </body>
 </html>
