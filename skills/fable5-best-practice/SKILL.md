@@ -9,13 +9,14 @@ Claude Fable 5 is best treated as a long-horizon thinking and design partner, no
 faster chat model. Use it where judgment, decomposition, verification, and sustained
 tool use matter enough to justify premium cost and latency.
 
-As of 2026-07-01, official Anthropic guidance describes Fable 5 as a generally
+As of 2026-07-02, official Anthropic guidance describes Fable 5 as a generally
 available Mythos-class model for demanding reasoning and long-horizon agentic work,
 with adaptive thinking always on, effort control, task budgets, memory, code
 execution, programmatic tool calling, context editing, compaction, vision, and
-conservative safeguards that can refuse or fall back to Opus 4.8. Re-check official
-docs before giving current pricing, availability, retention, or platform-specific API
-advice.
+conservative safeguards that can refuse or fall back to Opus 4.8. It requires
+30-day data retention and is not available under zero data retention arrangements.
+Re-check official docs before giving current pricing, availability, retention, or
+platform-specific API advice.
 
 ## When to use Fable 5
 
@@ -48,6 +49,23 @@ Use compact instructions. Old prompts written to compensate for weaker models ca
 over-constrain Fable 5. Remove brittle scaffolding, excessive persona text, and
 unneeded micro-rules unless they protect safety, budget, data, or business judgment.
 
+When the user is asking a question, sharing a problem, or thinking out loud rather
+than requesting a change, deliver an assessment and stop. Do not apply fixes until
+asked. Fable 5's proactive behavior is useful only inside a clearly delegated task.
+
+## Audit prompts before migrating
+
+Before moving an existing workflow or skill to Fable 5, remove instructions that fight
+the model's new defaults:
+
+- Drop step-by-step scaffolding that only existed to compensate for weaker models.
+- Keep rules that protect safety, budget, data, style, or business constraints.
+- Remove "show your reasoning", "transcribe your thoughts", or similar instructions;
+  they can trigger the `reasoning_extraction` refusal category.
+- Check client timeouts, streaming, progress indicators, and async job handling because
+  hard turns can run for many minutes and autonomous runs can last hours or days.
+- Re-baseline cost and token use on real workloads before promoting the migration.
+
 ## Start by interviewing the user
 
 For consequential work, use `AskUserQuestion` before planning. Do not ask for facts
@@ -71,6 +89,7 @@ continue with reasonable assumptions when the risk is low.
 
 Use effort deliberately:
 
+- `low`: routine classification, extraction, and other cheap bounded work.
 - `medium`: interactive exploration, quick design feedback, simple debugging, or
   when latency and cost matter more than deep search.
 - `high`: default for serious coding, architecture, planning, research synthesis,
@@ -82,6 +101,27 @@ Use effort deliberately:
 For long runs, set explicit task budgets where available: time, token, cost, tool-call
 limits, maximum files touched, maximum attempts, and stop conditions. A strong Fable 5
 prompt says both what to achieve and when to stop.
+
+At high effort, add a short scope-control instruction when the task is narrow: do not
+add features, broad refactors, abstractions, compatibility shims, or speculative error
+handling beyond what the task requires.
+
+## State boundaries and checkpoints
+
+Use an allow/deny boundary for long-running or sensitive work:
+
+```text
+Boundary:
+- Allowed: [files, tools, systems, actions]
+- Forbidden: [external messages, deploys, branch changes, destructive commands,
+  purchases, secrets, unrelated directories]
+
+Pause only for destructive or irreversible actions, real scope changes, or information
+only the user can provide. Otherwise continue and report when done.
+```
+
+If the agent finds a useful action outside the boundary, it should propose it and wait
+instead of doing it. Keep the boundary short enough to survive compaction.
 
 ## Design loops, not one-shot chats
 
@@ -97,6 +137,33 @@ For ambitious work, structure a loop:
 Do not let the model grade its own important work in isolation. Use an independent
 verifier when possible: a subagent, a cheaper model, test suite, linter, benchmark,
 query, screenshot check, stakeholder checklist, or human review gate.
+
+For Claude Code-style autonomy, match the loop primitive to the work:
+
+- Use `/goal` when "done" can be evaluated, such as tests passing, no failing CI jobs,
+  a Lighthouse score threshold, or all review comments addressed.
+- Use `/loop` for local recurring checks whose cadence is shorter-lived than the
+  machine session, such as polling a PR every few minutes.
+- Use `/schedule` for cloud-side recurring work that must survive local downtime.
+- Use dynamic workflows or subagents only after a small pilot estimates cost and
+  verifies the coordination pattern.
+
+Every loop needs a deterministic stop condition, maximum attempts, and a reporting
+shape that includes remaining failures or the reason it stopped.
+
+## Ground progress claims
+
+Long autonomous runs must tie progress reports to evidence. Add this instruction when
+accuracy of status matters:
+
+```text
+Before reporting progress, audit each claim against a tool result from this session.
+Only report work you can point to evidence for. If something is not verified, label it
+unverified. If tests failed or a step was skipped, say so plainly.
+```
+
+Do not treat "I plan to run X" as progress. If the agent says it will run a tool and
+the action is allowed, it should run the tool before ending the turn.
 
 ## Use memory carefully
 
@@ -146,6 +213,11 @@ Delegate routine execution to cheaper or faster models when available:
 When delegating, pass the goal, constraints, plan, acceptance criteria, and exact
 handoff artifacts. Do not pass a vague "continue this" instruction.
 
+Prefer async delegation: dispatch independent subtasks, keep the orchestrator moving,
+and intervene only when a subagent lacks context or is drifting. Use fresh-context
+verifier agents for acceptance checks rather than asking the executing context to
+critique itself.
+
 ## Safeguards, refusals, and fallback
 
 Fable 5 may decline or fall back for sensitive domains such as offensive
@@ -163,19 +235,31 @@ For integrations:
 - Do not try to bypass Fable 5 safeguards. Reformulate toward the legitimate goal or
   stop.
 
+If a harness surfaces remaining context budget to the model, avoid making the number
+part of the task framing. If it must be visible, explicitly say not to stop, summarize,
+or hand off solely because of context limits.
+
+For long asynchronous products, consider a `send_to_user`-style tool that displays a
+message verbatim without ending the agent turn. Use it only for partial deliverables,
+specific progress updates, or user-facing text that must not be summarized.
+
 ## Prompt pattern
 
-Use this shape for substantial tasks:
+Use this shape for substantial tasks. It maps to four essentials: context, request,
+output format, and constraints.
 
 ```text
 Context:
 I am working on [larger goal] for [audience/users]. This matters because [why].
 
-Target outcome:
-[Describe the ambitious finished state.]
+Request:
+[One sentence describing the concrete thing needed.]
 
 Current state:
 [Facts, links, repo paths, data sources, constraints, prior attempts.]
+
+Output format:
+[Deliverable shape, length, style, language, and audience.]
 
 Success criteria:
 - [Observable result]
@@ -207,6 +291,11 @@ When advising a user, be explicit about the working mode:
 - "Use a cheaper model" when the task is small or repetitive.
 - "Add a verifier" when correctness, safety, or external impact matters.
 - "Set a budget and stop condition" when the run could sprawl.
+
+For final reports after long unattended work, write for a reader who did not see the
+tool calls. Lead with the outcome, then the one or two decisions or actions they need
+to know. Avoid arrow-chain shorthand, invented labels, hidden-reasoning references, and
+dense compound jargon.
 
 The best Fable 5 use changes the user's role from operator to system designer:
 define the goal, constraints, tools, memory, verification, and gates, then let the
