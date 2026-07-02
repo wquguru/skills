@@ -4,6 +4,31 @@ A small collection of practical Claude Code skills.
 
 ## Skills
 
+### `fable5-best-practice`
+
+Guides agents and users in getting the most out of Claude Fable 5 for ambitious,
+long-running work. It focuses on where Fable 5 is worth the cost, how to scope
+autonomous runs, how to set effort and stop conditions, and how to keep progress
+claims tied to real tool evidence.
+
+The skill is especially useful when migrating older prompts or skills to Fable 5:
+it calls out over-constrained legacy prompting, `reasoning_extraction` refusal
+risks, boundary setting, memory files, verifier agents, `/goal` and `/loop`
+workflows, and long-run communication style.
+
+Install:
+
+```bash
+npx skills add https://github.com/wquguru/skills --skill fable5-best-practice
+```
+
+Ask for help with prompts like:
+
+- "Is this task Fable-worthy?"
+- "Help me write a Fable 5 prompt for a multi-day coding task."
+- "Review this old skill before migrating it to Fable 5."
+- "Design a /goal or /loop workflow for this agent task."
+
 ### `english-swe-daily`
 
 A practical English coach for everyday engineering communication. Built for
@@ -97,17 +122,17 @@ For local hacking, the `Justfile` symlinks every skill under `skills/` **and**
 re-publishing.
 
 ```bash
-just link     # symlink all skills (skills/ + external/) into ~/.claude + ~/.codex
-just unlink   # remove only the symlinks that point back into this repo
-just status   # show link status for each skill in both destinations
+just add      # symlink all skills (skills/ + external/) into ~/.claude + ~/.codex
+just remove   # remove only the symlinks that point back into this repo
+just status   # show install status for each skill in both destinations
 just vendor   # pull third-party skills declared in external.yml into external/
 just          # list available recipes
 ```
 
-`link` is idempotent and never clobbers: an existing real directory or a symlink
-from another source is left untouched and reported as skipped. `unlink` only
+`add` is idempotent and never clobbers: an existing real directory or a symlink
+from another source is left untouched and reported as skipped. `remove` only
 removes symlinks that resolve to this repo. After adding a new skill folder, just
-re-run `just link`.
+re-run `just add`.
 
 ## External (third-party) skills
 
@@ -122,7 +147,7 @@ separately so this repo stays purely self-written and free of foreign licenses:
    into `external/` (git-ignored) under their `3rd-`-prefixed names, rewrites each
    `SKILL.md` frontmatter `name` to match, and records the exact upstream commit
    SHA in `external.lock`.
-3. `just link` symlinks them alongside the self-written skills.
+3. `just add` symlinks them alongside the self-written skills.
 
 The `3rd-` prefix makes vendored skills easy to spot and invoke apart from the
 self-written ones in `skills/`. Only `external.yml` + `external.lock` are
@@ -134,12 +159,14 @@ after pinning a `ref`). A name that would collide with a self-written
 ## Repository Structure
 
 ```text
-Justfile          # link / unlink / status / vendor recipes
+Justfile          # add / remove / status / vendor recipes
 external.yml      # third-party skill sources (repo + ref + sub-paths)
 external.lock     # resolved upstream commit SHAs (auto-generated)
 scripts/
   vendor.sh       # pulls external.yml sources into external/
 skills/           # self-written skills (published)
+  fable5-best-practice/
+    SKILL.md
   english-swe-daily/
     SKILL.md
     references/

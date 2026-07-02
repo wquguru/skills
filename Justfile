@@ -11,12 +11,12 @@ default:
     @just --list
 
 # Pull third-party skills declared in external.yml into ./external/ (git-ignored),
-# recording resolved commit SHAs in external.lock. Run `just link` afterwards.
+# recording resolved commit SHAs in external.lock. Run `just add` afterwards.
 vendor:
     @scripts/vendor.sh
 
 # Symlink every skill in ./skills into ~/.claude/skills and ~/.codex/skills
-link:
+add:
     #!/usr/bin/env bash
     set -euo pipefail
     for dest in "{{claude_dir}}" "{{codex_dir}}"; do
@@ -44,7 +44,7 @@ link:
     done
 
 # Remove only the symlinks that point back into this repo
-unlink:
+remove:
     #!/usr/bin/env bash
     set -euo pipefail
     for dest in "{{claude_dir}}" "{{codex_dir}}"; do
@@ -60,7 +60,7 @@ unlink:
         done
     done
 
-# Show link status for each skill in both destinations
+# Show install status for each skill in both destinations
 status:
     #!/usr/bin/env bash
     set -euo pipefail

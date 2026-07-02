@@ -4,7 +4,7 @@
 #
 # Self-written skills live in ./skills/ and are never touched here. ./external/ is
 # git-ignored and fully disposable — re-runnable any time. After vendoring, run
-# `just link` to symlink everything into ~/.claude/skills and ~/.codex/skills.
+# `just add` to symlink everything into ~/.claude/skills and ~/.codex/skills.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -113,4 +113,4 @@ fi
 mv "$lock_tmp" "$lock"
 echo ""
 echo "Vendored ${#managed[@]} skill(s) into external/: ${managed[*]:-none}"
-echo "Wrote external.lock. Run 'just link' to symlink into ~/.claude/skills + ~/.codex/skills."
+echo "Wrote external.lock. Run 'just add' to symlink into ~/.claude/skills + ~/.codex/skills."

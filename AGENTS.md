@@ -8,8 +8,8 @@ This repository is a collection of Agent Skills. Self-authored skills live in `s
 
 - `just`: list available recipes.
 - `just vendor`: fetch third-party skills from `external.yml` into `external/` and update `external.lock`.
-- `just link`: symlink all local and vendored skills into `~/.claude/skills` and `~/.codex/skills`.
-- `just unlink`: remove only symlinks that point back to this repository.
+- `just add`: symlink all local and vendored skills into `~/.claude/skills` and `~/.codex/skills`.
+- `just remove`: remove only symlinks that point back to this repository.
 - `just status`: show whether each skill is linked in both destinations.
 
 There is no package build step. For a new or edited skill, run the system validator when available:
@@ -34,4 +34,4 @@ Pull requests should describe the changed skill, list validation commands run, a
 
 ## Agent-Specific Instructions
 
-When creating or updating a skill, use the `skill-creator` guidance. Do not overwrite user-owned skill directories in `~/.claude/skills` or `~/.codex/skills`; use `just link` and `just unlink` so symlinks remain auditable.
+When creating or updating a skill, use the `skill-creator` guidance. Do not overwrite user-owned skill directories in `~/.claude/skills` or `~/.codex/skills`; use `just add` and `just remove` so symlinks remain auditable.
