@@ -343,21 +343,16 @@ main,
   display: block;
 }
 
-.hero-visual {
+.hero-terminal {
   grid-column: 8 / 13;
   align-self: center;
-  margin: 0;
-  border: 1px solid var(--line-strong);
-  background: var(--lift);
-  box-shadow: var(--shadow);
   transform: translateY(clamp(2rem, 5vw, 4rem));
 }
 
-.hero-visual img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1717 / 916;
-  object-fit: cover;
+.hero-terminal pre {
+  min-height: 9rem;
+  display: flex;
+  align-items: end;
 }
 
 .stats {
@@ -499,7 +494,7 @@ h2 {
 }
 
 .skill-card {
-  min-height: 16.5rem;
+  min-height: 20rem;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -513,6 +508,10 @@ h2 {
   border-color: var(--ink);
   background: color-mix(in srgb, var(--paper) 92%, transparent);
   transform: translateY(-2px);
+}
+
+.skill-card p {
+  flex: 1;
 }
 
 .skill-topline {
@@ -562,6 +561,75 @@ pre code {
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 0.9rem;
+}
+
+.copy-panel,
+.copy-line {
+  position: relative;
+}
+
+.copy-head,
+.copy-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.copy-head {
+  color: var(--soft);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.copy-line {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--lift) 82%, transparent);
+}
+
+.copy-line code {
+  min-width: 0;
+  padding: 0.72rem 0 0.72rem 0.72rem;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 0.72rem;
+  border-left: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper) 74%, transparent);
+  color: var(--ink);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.copy-head .copy-button {
+  border: 1px solid var(--line);
+}
+
+.copy-button:hover,
+.copy-button:focus-visible {
+  background: var(--selection);
+  color: #101211;
+  outline: 0;
+}
+
+.copy-button.is-copied {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .site-footer {
@@ -635,7 +703,7 @@ pre code {
   .hero-meta,
   .hero-title,
   .hero-kicker,
-  .hero-visual,
+  .hero-terminal,
   .overview > div:first-child,
   .overview .source-grid {
     grid-column: 1 / -1;
@@ -652,7 +720,7 @@ pre code {
     text-align: left;
   }
 
-  .hero-visual {
+  .hero-terminal {
     transform: none;
   }
 
@@ -729,6 +797,14 @@ pre code {
   .skill-card,
   .command-card {
     min-height: auto;
+  }
+
+  .copy-line {
+    align-items: stretch;
+  }
+
+  .copy-line code {
+    white-space: normal;
   }
 
   .hud {

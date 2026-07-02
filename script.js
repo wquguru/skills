@@ -3,6 +3,7 @@ const themeToggle = document.querySelector("#theme-toggle");
 const clock = document.querySelector("#clock");
 const coords = document.querySelector("#coords");
 const scrollbar = document.querySelector(".scrollbar-ghost");
+const copyButtons = document.querySelectorAll("[data-copy]");
 
 const savedTheme = localStorage.getItem("skills-theme");
 const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
@@ -40,12 +41,61 @@ function updateScroll() {
   }
 }
 
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall through to the textarea path for browsers that expose but block the Clipboard API.
+    }
+  }
+
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "");
+  input.style.position = "fixed";
+  input.style.left = "-9999px";
+  document.body.append(input);
+  input.select();
+  document.execCommand("copy");
+  input.remove();
+}
+
 setTheme(initialTheme);
 updateClock();
 updateScroll();
 
 themeToggle?.addEventListener("click", () => {
   setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+});
+
+copyButtons.forEach((button) => {
+  const defaultLabel = button.textContent || "COPY";
+
+  button.addEventListener("click", async () => {
+    const command = button.getAttribute("data-copy");
+    if (!command) return;
+
+    try {
+      await copyText(command);
+      button.textContent = "COPIED";
+      button.dataset.copyState = "copied";
+      button.classList.add("is-copied");
+      window.setTimeout(() => {
+        button.textContent = defaultLabel;
+        delete button.dataset.copyState;
+        button.classList.remove("is-copied");
+      }, 1400);
+    } catch {
+      button.textContent = "FAILED";
+      button.dataset.copyState = "failed";
+      window.setTimeout(() => {
+        button.textContent = defaultLabel;
+        delete button.dataset.copyState;
+      }, 1400);
+    }
+  });
 });
 
 window.addEventListener(
