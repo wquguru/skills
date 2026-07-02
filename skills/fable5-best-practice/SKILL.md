@@ -80,6 +80,9 @@ Ask questions like:
 - What should Fable 5 pause for: destructive changes, purchases, deploys, external
   messages, legal/security/privacy topics, or major scope changes?
 - What would make the run a failure even if it produces a lot of work?
+- Where will this run, and can that harness spawn subagents? (Determines whether
+  the prompt needs a delegation/model-routing section — see "Model mix and
+  delegation".)
 
 If `AskUserQuestion` supports choices, make the recommended default first and mark it
 `(Recommended)`. If the tool is unavailable, ask concise plain-language questions and
@@ -221,9 +224,11 @@ marginal cost is low. Use Sonnet or scripts for repository exploration, grep-sty
 investigation, bulk file reading, browser/computer-use plumbing, log triage, and
 deterministic transforms. Hand distilled evidence to Opus or Fable 5 for judgment.
 
-When designing a workflow, subagent tree, or model allocation policy, read
-`references/claude-model-routing.md` for the detailed routing matrix and handoff
-prompts.
+When designing a workflow, subagent tree, model allocation policy, or a prompt
+for any agent that can spawn subagents, read `references/claude-model-routing.md`
+for the detailed routing matrix and handoff prompts. Writing a prompt for an
+orchestrator IS designing a subagent tree — do not skip this because the task
+looks like "just prompt writing".
 
 When delegating, pass the goal, constraints, plan, acceptance criteria, and exact
 handoff artifacts. Do not pass a vague "continue this" instruction.
@@ -280,6 +285,14 @@ Success criteria:
 - [Observable result]
 - [Verification method]
 - [Quality bar]
+
+Delegation & model mix:
+[Who executes: single model, or a subagent tree. If the target harness can spawn
+subagents, specify which tier gathers evidence (Sonnet), which reviews for taste
+and code quality (Opus), which arbitrates and owns judgment calls (Fable), and
+the independent fresh-context verifier. See references/claude-model-routing.md.
+If the harness cannot spawn subagents, say "single model" and collapse this into
+an explore-then-judge sequence.]
 
 Approval gates:
 Pause before [destructive / expensive / external / scope-changing actions].
