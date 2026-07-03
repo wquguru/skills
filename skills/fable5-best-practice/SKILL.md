@@ -1,6 +1,6 @@
 ---
 name: fable5-best-practice
-description: Guides agents in scoping, prompting, budgeting, supervising, validating, and routing Claude Fable 5 work across Fable, Opus, and Sonnet for long-horizon reasoning, design, coding, research, and agentic workflows.
+description: Guides agents in scoping, prompting, budgeting, supervising, validating, and routing Claude Fable 5 work across Fable, Opus, Sonnet, and Codex for long-horizon reasoning, design, coding, research, and agentic workflows.
 ---
 
 # fable5-best-practice
@@ -17,6 +17,18 @@ conservative safeguards that can refuse or fall back to Opus 4.8. It requires
 30-day data retention and is not available under zero data retention arrangements.
 Re-check official docs before giving current pricing, availability, retention, or
 platform-specific API advice.
+
+Cost snapshot as of 2026-07-02:
+
+| Model | Base input | Output | Best use |
+| --- | ---: | ---: | --- |
+| Sonnet 5 | $2/MTok through 2026-08-31, then $3/MTok | $10/MTok through 2026-08-31, then $15/MTok | exploration and execution |
+| Opus 4.8 | $5/MTok | $25/MTok | taste-heavy review and senior implementation |
+| Fable 5 | $10/MTok | $50/MTok | decision layer, hard reasoning, arbitration |
+
+Use the cheapest model that can reliably meet the acceptance criteria. Upgrade only
+when cheaper execution misses a specific criterion, or when the task is already
+high-stakes enough that a weaker pass would be false economy.
 
 ## When to use Fable 5
 
@@ -39,6 +51,7 @@ formatting, one-off summaries, or work that a lower-cost model can do in one pas
 Prefer goals over step-by-step micromanagement:
 
 - Ask for the outcome, success criteria, constraints, and audience.
+- Ask why the output matters and what decision or workflow it will enable.
 - Ask what "done" looks like and how success should be verified.
 - Ask which actions require user approval before proceeding.
 - Give Fable 5 tools, files, tests, and evidence sources so it can measure progress.
@@ -68,9 +81,10 @@ the model's new defaults:
 
 ## Start by interviewing the user
 
-For consequential work, use `AskUserQuestion` before planning. Do not ask for facts
-you can inspect yourself; ask for intent, priorities, constraints, and judgment calls.
-Keep the interview short and high-leverage.
+For consequential work, use the harness's user-question tool before planning when it
+is available. Do not ask for facts you can inspect yourself; ask for intent,
+priorities, constraints, and judgment calls. Keep the interview short and
+high-leverage.
 
 Ask questions like:
 
@@ -84,9 +98,9 @@ Ask questions like:
   the prompt needs a delegation/model-routing section — see "Model mix and
   delegation".)
 
-If `AskUserQuestion` supports choices, make the recommended default first and mark it
-`(Recommended)`. If the tool is unavailable, ask concise plain-language questions and
-continue with reasonable assumptions when the risk is low.
+If the question tool supports choices, make the recommended default first and mark it
+`(Recommended)`. If no question tool is available, ask concise plain-language
+questions and continue with reasonable assumptions when the risk is low.
 
 ## Match effort to the task
 
@@ -100,6 +114,14 @@ Use effort deliberately:
 - `xhigh` or the highest available effort: high-stakes decisions, large migrations,
   complex root-cause analysis, evaluation design, deep pre-mortems, and runs where
   self-verification is worth the cost.
+
+Default new Fable-led coding workflows to `high`, not the maximum effort, unless the
+decision is high-risk or prior runs show `high` is missing the acceptance criteria.
+Escalate to the maximum effort for final arbitration, pre-mortems, or root-cause
+analysis; de-escalate after the decision layer is settled and delegate execution.
+Drop to `medium` when `high` solves the task but spends too long exploring unused
+alternatives, adds unsolicited improvements, or produces more detail than the user can
+act on.
 
 For long runs, set explicit task budgets where available: time, token, cost, tool-call
 limits, maximum files touched, maximum attempts, and stop conditions. A strong Fable 5
@@ -152,7 +174,9 @@ For Claude Code-style autonomy, match the loop primitive to the work:
   verifies the coordination pattern.
 
 Every loop needs a deterministic stop condition, maximum attempts, and a reporting
-shape that includes remaining failures or the reason it stopped.
+shape that includes remaining failures or the reason it stopped. Prefer numeric or
+externally checkable completion criteria over "make it better" language; loose goals
+invite early success claims or expensive empty iteration.
 
 ## Ground progress claims
 
@@ -171,7 +195,9 @@ the action is allowed, it should run the tool before ending the turn.
 ## Use memory carefully
 
 For multi-session work, ask Fable 5 to maintain a short persistent memory file such
-as `learnings.md` or `state.md`. Keep it as a living snapshot, not a changelog.
+as `learnings.md` or `state.md`. Keep it as a living snapshot, not a changelog. For
+repository loops with recurring lessons, a `notes/` directory with one durable lesson
+per file can work better than a single growing document.
 
 Recommended shape:
 
@@ -194,24 +220,27 @@ One-sentence summary of the goal and current status.
 ```
 
 Each loop should update this file by replacing stale content, not appending a diary.
-If the memory grows beyond what a human would reread, compact it.
+If the memory grows beyond what a human would reread, compact it. Do not duplicate
+facts already in the repo or chat. Update existing notes before creating near-duplicates,
+and delete notes that later evidence proves wrong.
 
 ## Model mix and delegation
 
 Treat cost as deployment-specific. Official API sticker prices, batch discounts,
 prompt caching, user subscriptions, plan entitlements, and internal quotas can produce
-very different marginal costs. Maintain a local routing table with three scores:
-intelligence, taste, and effective marginal cost. For deliverables, prioritize
-intelligence and taste before cost; use cost mainly as a tie-breaker once quality is
-good enough.
+very different marginal costs. Maintain a local routing table with four scores:
+acceptance reliability, taste, throughput, and effective marginal cost. For most work,
+choose the lowest-cost model that is expected to pass the acceptance criteria without
+churn; spend Fable tokens on judgment, not bulk context gathering.
 
-Quick Claude routing:
+Quick routing:
 
 | Model | Default role | Avoid using for |
 | --- | --- | --- |
 | Sonnet | Fast execution, exploration, long tool loops, browser/computer-use, mechanical implementation | Final arbitration, high-taste deliverables, ambiguous architecture calls |
 | Opus | Taste-heavy craft, UI/prose/API design, code quality review, experienced implementation | Bulk token burn, simple searches, routine plumbing |
 | Fable 5 | Hard battles: deepest reasoning, long-horizon autonomy, pre-mortems, high-stakes review, final arbitration | Cheap frequent tasks, raw codebase exploration, repetitive execution |
+| Codex | Peer senior engineer with a different model family, strong coding judgment, local tooling, and independent perspective | Blindly approving Claude's plan, replacing the orchestrator, routine work better handled by Sonnet |
 
 These are defaults, not ceilings. Upgrade Sonnet to Opus when execution is adequate
 but taste, judgment, or review quality is lacking. Upgrade Opus to Fable 5 when the
@@ -226,9 +255,48 @@ deterministic transforms. Hand distilled evidence to Opus or Fable 5 for judgmen
 
 When designing a workflow, subagent tree, model allocation policy, or a prompt
 for any agent that can spawn subagents, read `references/claude-model-routing.md`
-for the detailed routing matrix and handoff prompts. Writing a prompt for an
-orchestrator IS designing a subagent tree — do not skip this because the task
-looks like "just prompt writing".
+for the detailed routing matrix, cost rules, token hygiene checklist, Codex readiness
+gates, and handoff prompts. Writing a prompt for an orchestrator is designing a
+subagent tree; do not skip the reference because the task looks like "just prompt
+writing".
+
+### Fable-led orchestration with Codex peer
+
+Use this pattern when Fable 5 usage is expensive but its judgment is still needed:
+
+- Fable 5, usually at `high` effort and only at maximum effort for high-stakes
+  arbitration, is the lead orchestrator. It frames the problem, decomposes work,
+  assigns agents, keeps context lean, and synthesizes final decisions.
+- `deep-reasoner`, pinned to Opus, handles reasoning-heavy phases: architecture,
+  complex debugging, algorithm design, tradeoff analysis, and second-order risks.
+- `fast-worker`, usually pinned to Sonnet, handles mechanical work: codebase
+  exploration, boilerplate, tests, formatting, simple edits, and deterministic
+  execution from a clear spec. Pin it to Opus instead when Sonnet churns, makes
+  subtle implementation mistakes, or the local token economics make Opus-worker
+  cheaper than repeated Sonnet retries.
+- Codex, when available through the current harness, supplies an independent model
+  family and local engineering perspective. In Claude Code, that means the
+  `codex@openai-codex` plugin and a successful `/codex:setup`, not merely a
+  standalone Codex CLI on disk.
+
+For substantial implementation, have Fable produce a compact design packet before
+delegation: goal, architecture or patch plan, invariants, affected files, acceptance
+criteria, and verification commands. Give workers the design packet, not the whole
+conversation.
+
+Require subagents to return compact outputs only: conclusion, evidence, files changed,
+verification result, blockers, and decisions that need escalation. Do not ask them to
+transcribe full hidden reasoning. If a critique round is useful, run it as a bounded
+second pass over artifacts and summarized conclusions.
+
+For high-stakes decisions, ask Opus and Codex to work the same problem in parallel
+without showing either one the other's answer. Give both the same goal, constraints,
+evidence packet, and acceptance criteria. Fable 5 then compares the independent
+outputs, resolves conflicts against evidence, and decides what to execute.
+
+Use `/goal`, `/loop`, `/schedule`, `/sprint`, or custom commands only when the local
+harness actually provides them. Treat them as phase-control primitives, not as a
+replacement for explicit acceptance criteria, budgets, and stop conditions.
 
 When delegating, pass the goal, constraints, plan, acceptance criteria, and exact
 handoff artifacts. Do not pass a vague "continue this" instruction.
@@ -278,6 +346,9 @@ Request:
 Current state:
 [Facts, links, repo paths, data sources, constraints, prior attempts.]
 
+Why it matters:
+[Decision, stakeholder, workflow, or risk this output should support.]
+
 Output format:
 [Deliverable shape, length, style, language, and audience.]
 
@@ -289,8 +360,9 @@ Success criteria:
 Delegation & model mix:
 [Who executes: single model, or a subagent tree. If the target harness can spawn
 subagents, specify which tier gathers evidence (Sonnet), which reviews for taste
-and code quality (Opus), which arbitrates and owns judgment calls (Fable), and
-the independent fresh-context verifier. See references/claude-model-routing.md.
+and code quality (Opus), which provides independent senior engineering perspective
+(Codex, if installed), which arbitrates and owns judgment calls (Fable), and the
+independent fresh-context verifier. See references/claude-model-routing.md.
 If the harness cannot spawn subagents, say "single model" and collapse this into
 an explore-then-judge sequence.]
 
