@@ -1,6 +1,6 @@
 ---
 name: fable5-best-practice
-description: Guides agents in scoping, prompting, budgeting, supervising, validating, and routing Claude Fable 5 work across Fable, Opus, Sonnet, and Codex for long-horizon reasoning, design, coding, research, and agentic workflows.
+description: Guides agents in scoping, surfacing unknowns, prompting, budgeting, supervising, validating, and routing Claude Fable 5 work across Fable, Opus, Sonnet, and Codex for long-horizon reasoning, design, coding, research, and agentic workflows.
 ---
 
 # fable5-best-practice
@@ -78,6 +78,42 @@ the model's new defaults:
 - Check client timeouts, streaming, progress indicators, and async job handling because
   hard turns can run for many minutes and autonomous runs can last hours or days.
 - Re-baseline cost and token use on real workloads before promoting the migration.
+
+## The map is not the territory: work your unknowns
+
+The map is what you give the model: the prompt, skills, and context. The territory is
+where the work actually happens: the codebase, the design space, the real constraints.
+The gap between them is unknowns, and with Fable 5 the quality of the work is usually
+bottlenecked by how well those unknowns get surfaced, not by the model's raw ability.
+More work attempted in one run means more unknowns it can hit.
+
+Sort what you know into four buckets and pick the technique that fills the empty ones:
+
+- Known knowns: what you can already state. Put these in the prompt.
+- Known unknowns: gaps you are aware of. Ask, research, or prototype them.
+- Unknown knowns: "know it when I see it" criteria you would never write down. Surface
+  them by reacting to brainstorms and prototypes.
+- Unknown unknowns: what you have not considered at all. Surface them with a blind spot
+  pass.
+
+Discovering unknowns is iterative and happens before, during, and after implementation.
+Every brainstorm, interview, prototype, reference, and explainer is a cheap way to learn
+what you did not know before it gets expensive to fix in code. Give the model your
+starting point — what you already know, your experience with this problem and codebase,
+and where you are in your thinking — so it targets the real gaps instead of guessing.
+
+When a task has meaningful unknowns, read `references/phase-playbook.md` for the
+phase-by-phase techniques and example prompts:
+
+- Before: blind spot pass (unknown unknowns), brainstorm and prototype with throwaway
+  HTML (unknown knowns), interview, source-code references, and an implementation plan
+  that leads with the decisions most likely to change.
+- During: a temporary `implementation-notes.md` deviation log kept in a fresh
+  implementation session.
+- After: a pitch or explainer artifact for buy-in, and a quiz you must pass before merging.
+
+Prefer HTML artifacts for brainstorms, prototypes, plans, pitches, and quizzes; they are
+usually the best medium for reacting to and sharing this kind of work.
 
 ## Start by interviewing the user
 
@@ -333,54 +369,12 @@ specific progress updates, or user-facing text that must not be summarized.
 
 ## Prompt pattern
 
-Use this shape for substantial tasks. It maps to four essentials: context, request,
-output format, and constraints.
-
-```text
-Context:
-I am working on [larger goal] for [audience/users]. This matters because [why].
-
-Request:
-[One sentence describing the concrete thing needed.]
-
-Current state:
-[Facts, links, repo paths, data sources, constraints, prior attempts.]
-
-Why it matters:
-[Decision, stakeholder, workflow, or risk this output should support.]
-
-Output format:
-[Deliverable shape, length, style, language, and audience.]
-
-Success criteria:
-- [Observable result]
-- [Verification method]
-- [Quality bar]
-
-Delegation & model mix:
-[Who executes: single model, or a subagent tree. If the target harness can spawn
-subagents, specify which tier gathers evidence (Sonnet), which reviews for taste
-and code quality (Opus), which provides independent senior engineering perspective
-(Codex, if installed), which arbitrates and owns judgment calls (Fable), and the
-independent fresh-context verifier. See references/claude-model-routing.md.
-If the harness cannot spawn subagents, say "single model" and collapse this into
-an explore-then-judge sequence.]
-
-Approval gates:
-Pause before [destructive / expensive / external / scope-changing actions].
-
-Your job:
-Interview me if key intent is missing. Then propose a plan, pre-mortem the likely
-failure modes, identify the first highest-leverage slice, execute where allowed, and
-verify before reporting success.
-```
-
-For strategy work, add:
-
-```text
-Before planning, assume this fails 12-24 months from now. What were the most likely
-causes, what early signals would reveal them, and how should we design around them?
-```
+For substantial tasks, use the fill-in prompt template in
+`references/prompt-patterns.md`. It maps to four essentials — context, request, output
+format, and constraints — and includes slots for current state, success criteria,
+delegation and model mix, approval gates, and a "your job" close that asks the model to
+interview, do a blind spot pass, plan, pre-mortem, execute, and verify. The reference
+also carries a pre-mortem add-on for strategy work.
 
 ## Final guidance to users
 
