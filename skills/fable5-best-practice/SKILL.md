@@ -101,54 +101,19 @@ Every brainstorm, interview, prototype, reference, and explainer is a cheap way 
 what you did not know before it gets expensive to fix in code. Give the model your
 starting point — what you already know, your experience with this problem and codebase,
 and where you are in your thinking — so it targets the real gaps instead of guessing.
+
+When a task has meaningful unknowns, read `references/phase-playbook.md` for the
+phase-by-phase techniques and example prompts:
+
+- Before: blind spot pass (unknown unknowns), brainstorm and prototype with throwaway
+  HTML (unknown knowns), interview, source-code references, and an implementation plan
+  that leads with the decisions most likely to change.
+- During: a temporary `implementation-notes.md` deviation log kept in a fresh
+  implementation session.
+- After: a pitch or explainer artifact for buy-in, and a quiz you must pass before merging.
+
 Prefer HTML artifacts for brainstorms, prototypes, plans, pitches, and quizzes; they are
 usually the best medium for reacting to and sharing this kind of work.
-
-### Before implementation
-
-- Blind spot pass: in an unfamiliar area, ask the model to find your unknown unknowns
-  and teach them to you. Use the literal framing "do a blind spot pass on my unknown
-  unknowns," state who you are and what you do not know, and ask it to help you prompt
-  better. Good for new subsystems, unfamiliar domains, or design work where you cannot
-  yet tell what "good" looks like.
-- Brainstorm and prototype: when the criteria are "know it when I see it," ask for
-  several wildly different directions as a throwaway HTML artifact with fake data before
-  wiring anything real. Reacting to cheap mockups surfaces unknown knowns that are
-  costly to discover mid-implementation, because small spec changes can force very
-  different code. Open most sessions with a short exploration pass so scope is set with
-  intent rather than guessed too narrow or too wide.
-- Interview: after brainstorming, have the model interview you one question at a time
-  about anything ambiguous, prioritizing questions whose answers would change the
-  architecture. See "Start by interviewing the user" for the user-facing version.
-- References: when you cannot describe what you want, point at source code. A library,
-  crate, or component that already behaves the way you want is a richer reference than a
-  screenshot or a prose description — the model reads the structure, not just the
-  surface, and it works across languages ("read vendor/x and reimplement these semantics
-  here").
-- Implementation plan: when ready to build, ask for a plan that leads with the decisions
-  you are most likely to change — data model changes, new type interfaces, and
-  user-facing flows — and buries mechanical refactoring at the bottom. This puts the
-  reviewable, mutable choices where you will actually catch them.
-
-### During implementation
-
-Start implementation in a fresh session with the artifacts attached (spec, prototype,
-plan). No amount of planning removes every unknown unknown, so ask the agent to keep a
-temporary `implementation-notes.md`: when an edge case forces a deviation from the plan,
-take the conservative option, log it under "Deviations," and keep going. The notes make
-the next attempt cheaper and expose unknowns the plan missed. This is a during-run
-scratch file for one task, distinct from the durable memory file in "Use memory
-carefully."
-
-### After implementation
-
-- Pitch and explainer: package the spec, prototype, and implementation notes into a
-  single artifact for buy-in. Lead with the demo and write for reviewers who start with
-  the same unknowns you did; accounting for the failure points an expert would anticipate
-  speeds approval.
-- Quiz: after a long run, reading the diff gives only shallow understanding because
-  behavior depends on existing code paths. Ask the model for a report on the change with
-  context and intuition, plus a quiz at the bottom you must pass before merging.
 
 ## Start by interviewing the user
 
@@ -404,55 +369,12 @@ specific progress updates, or user-facing text that must not be summarized.
 
 ## Prompt pattern
 
-Use this shape for substantial tasks. It maps to four essentials: context, request,
-output format, and constraints.
-
-```text
-Context:
-I am working on [larger goal] for [audience/users]. This matters because [why].
-
-Request:
-[One sentence describing the concrete thing needed.]
-
-Current state:
-[Facts, links, repo paths, data sources, constraints, prior attempts.]
-
-Why it matters:
-[Decision, stakeholder, workflow, or risk this output should support.]
-
-Output format:
-[Deliverable shape, length, style, language, and audience.]
-
-Success criteria:
-- [Observable result]
-- [Verification method]
-- [Quality bar]
-
-Delegation & model mix:
-[Who executes: single model, or a subagent tree. If the target harness can spawn
-subagents, specify which tier gathers evidence (Sonnet), which reviews for taste
-and code quality (Opus), which provides independent senior engineering perspective
-(Codex, if installed), which arbitrates and owns judgment calls (Fable), and the
-independent fresh-context verifier. See references/claude-model-routing.md.
-If the harness cannot spawn subagents, say "single model" and collapse this into
-an explore-then-judge sequence.]
-
-Approval gates:
-Pause before [destructive / expensive / external / scope-changing actions].
-
-Your job:
-Interview me if key intent is missing, and do a blind spot pass on my unknown unknowns
-before committing to an approach. Then propose a plan, pre-mortem the likely failure
-modes, identify the first highest-leverage slice, execute where allowed, and verify
-before reporting success.
-```
-
-For strategy work, add:
-
-```text
-Before planning, assume this fails 12-24 months from now. What were the most likely
-causes, what early signals would reveal them, and how should we design around them?
-```
+For substantial tasks, use the fill-in prompt template in
+`references/prompt-patterns.md`. It maps to four essentials — context, request, output
+format, and constraints — and includes slots for current state, success criteria,
+delegation and model mix, approval gates, and a "your job" close that asks the model to
+interview, do a blind spot pass, plan, pre-mortem, execute, and verify. The reference
+also carries a pre-mortem add-on for strategy work.
 
 ## Final guidance to users
 
