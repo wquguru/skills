@@ -1,0 +1,4 @@
+interface:
+  display_name: "Free My Disk"
+  short_description: "Safely audit and reclaim macOS or Linux disk space"
+  default_prompt: "Use $free-my-disk to audit my Mac, Ubuntu/Linux host, or remote server disk usage and safely reclaim space."
