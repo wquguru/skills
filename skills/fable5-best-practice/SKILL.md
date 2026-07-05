@@ -1,6 +1,6 @@
 ---
 name: fable5-best-practice
-description: Guides agents in scoping, prompting, budgeting, supervising, validating, and routing Claude Fable 5 work across Fable, Opus, Sonnet, and Codex for long-horizon reasoning, design, coding, research, and agentic workflows.
+description: Guides agents in scoping, surfacing unknowns, prompting, budgeting, supervising, validating, and routing Claude Fable 5 work across Fable, Opus, Sonnet, and Codex for long-horizon reasoning, design, coding, research, and agentic workflows.
 ---
 
 # fable5-best-practice
@@ -78,6 +78,77 @@ the model's new defaults:
 - Check client timeouts, streaming, progress indicators, and async job handling because
   hard turns can run for many minutes and autonomous runs can last hours or days.
 - Re-baseline cost and token use on real workloads before promoting the migration.
+
+## The map is not the territory: work your unknowns
+
+The map is what you give the model: the prompt, skills, and context. The territory is
+where the work actually happens: the codebase, the design space, the real constraints.
+The gap between them is unknowns, and with Fable 5 the quality of the work is usually
+bottlenecked by how well those unknowns get surfaced, not by the model's raw ability.
+More work attempted in one run means more unknowns it can hit.
+
+Sort what you know into four buckets and pick the technique that fills the empty ones:
+
+- Known knowns: what you can already state. Put these in the prompt.
+- Known unknowns: gaps you are aware of. Ask, research, or prototype them.
+- Unknown knowns: "know it when I see it" criteria you would never write down. Surface
+  them by reacting to brainstorms and prototypes.
+- Unknown unknowns: what you have not considered at all. Surface them with a blind spot
+  pass.
+
+Discovering unknowns is iterative and happens before, during, and after implementation.
+Every brainstorm, interview, prototype, reference, and explainer is a cheap way to learn
+what you did not know before it gets expensive to fix in code. Give the model your
+starting point — what you already know, your experience with this problem and codebase,
+and where you are in your thinking — so it targets the real gaps instead of guessing.
+Prefer HTML artifacts for brainstorms, prototypes, plans, pitches, and quizzes; they are
+usually the best medium for reacting to and sharing this kind of work.
+
+### Before implementation
+
+- Blind spot pass: in an unfamiliar area, ask the model to find your unknown unknowns
+  and teach them to you. Use the literal framing "do a blind spot pass on my unknown
+  unknowns," state who you are and what you do not know, and ask it to help you prompt
+  better. Good for new subsystems, unfamiliar domains, or design work where you cannot
+  yet tell what "good" looks like.
+- Brainstorm and prototype: when the criteria are "know it when I see it," ask for
+  several wildly different directions as a throwaway HTML artifact with fake data before
+  wiring anything real. Reacting to cheap mockups surfaces unknown knowns that are
+  costly to discover mid-implementation, because small spec changes can force very
+  different code. Open most sessions with a short exploration pass so scope is set with
+  intent rather than guessed too narrow or too wide.
+- Interview: after brainstorming, have the model interview you one question at a time
+  about anything ambiguous, prioritizing questions whose answers would change the
+  architecture. See "Start by interviewing the user" for the user-facing version.
+- References: when you cannot describe what you want, point at source code. A library,
+  crate, or component that already behaves the way you want is a richer reference than a
+  screenshot or a prose description — the model reads the structure, not just the
+  surface, and it works across languages ("read vendor/x and reimplement these semantics
+  here").
+- Implementation plan: when ready to build, ask for a plan that leads with the decisions
+  you are most likely to change — data model changes, new type interfaces, and
+  user-facing flows — and buries mechanical refactoring at the bottom. This puts the
+  reviewable, mutable choices where you will actually catch them.
+
+### During implementation
+
+Start implementation in a fresh session with the artifacts attached (spec, prototype,
+plan). No amount of planning removes every unknown unknown, so ask the agent to keep a
+temporary `implementation-notes.md`: when an edge case forces a deviation from the plan,
+take the conservative option, log it under "Deviations," and keep going. The notes make
+the next attempt cheaper and expose unknowns the plan missed. This is a during-run
+scratch file for one task, distinct from the durable memory file in "Use memory
+carefully."
+
+### After implementation
+
+- Pitch and explainer: package the spec, prototype, and implementation notes into a
+  single artifact for buy-in. Lead with the demo and write for reviewers who start with
+  the same unknowns you did; accounting for the failure points an expert would anticipate
+  speeds approval.
+- Quiz: after a long run, reading the diff gives only shallow understanding because
+  behavior depends on existing code paths. Ask the model for a report on the change with
+  context and intuition, plus a quiz at the bottom you must pass before merging.
 
 ## Start by interviewing the user
 
@@ -370,9 +441,10 @@ Approval gates:
 Pause before [destructive / expensive / external / scope-changing actions].
 
 Your job:
-Interview me if key intent is missing. Then propose a plan, pre-mortem the likely
-failure modes, identify the first highest-leverage slice, execute where allowed, and
-verify before reporting success.
+Interview me if key intent is missing, and do a blind spot pass on my unknown unknowns
+before committing to an approach. Then propose a plan, pre-mortem the likely failure
+modes, identify the first highest-leverage slice, execute where allowed, and verify
+before reporting success.
 ```
 
 For strategy work, add:
