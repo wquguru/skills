@@ -84,6 +84,27 @@ Prerequisites:
 - An Ant-Ling/Ling key (`LING_API_KEY`, in a shell rc or environment
   variable) — only needed when enabling Ring
 
+### `free-my-cpu`
+
+Safely audits CPU, load average, I/O wait, and Docker container pressure on
+Linux hosts, especially production-like servers over SSH. It follows the same
+read-only-first posture as `free-my-disk`: collect repeated samples, separate
+CPU-bound work from I/O pressure, inspect hot containers and logs, then classify
+possible fixes by impact before changing anything.
+
+Install:
+
+```bash
+npx skills add https://github.com/wquguru/skills --skill free-my-cpu
+```
+
+Ask for help with prompts like:
+
+- "Use free-my-cpu to inspect this remote Docker host."
+- "Why is this Docker host load average so high?"
+- "Find which container is burning CPU."
+- "Use this Grafana URL and the last 6 hours to check whether monitoring queries are causing load."
+
 ### `youtube-toolkit`
 
 Downloads YouTube videos with `yt-dlp` and post-processes them with `ffmpeg`:

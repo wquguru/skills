@@ -1,0 +1,4 @@
+interface:
+  display_name: "Free My CPU"
+  short_description: "Audit and reduce CPU pressure safely"
+  default_prompt: "Use $free-my-cpu to audit CPU pressure on a Linux Docker host over SSH."
