@@ -1,0 +1,89 @@
+name: Security Audit
+
+# Security auditing for Agent Skills. Runs three complementary layers:
+#   1. skill-audit   — deterministic scan for supply-chain risks in skill
+#                      sources (curl|sh, reverse shells, rm -rf ~, cred exfil,
+#                      hardcoded secrets) + shellcheck. No secrets required.
+#   2. secret-scan   — Gitleaks, deterministic secret detection over history.
+#   3. claude-review — Anthropic's AI security review; catches prompt injection
+#                      in SKILL.md prose. Requires the CLAUDE_API_KEY secret;
+#                      skipped automatically when the secret is absent.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"  # weekly, Monday 06:00 UTC
+
+# Least privilege by default; jobs widen only what they need.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  skill-audit:
+    name: Skill supply-chain audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static security scan of skills
+        run: python3 scripts/audit_skills_security.py skills --fail-on critical --min-severity medium
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Shellcheck skill scripts (errors gate the build)
+        run: |
+          mapfile -t files < <(find skills external -type f \( -name '*.sh' -o -name '*.bash' \) 2>/dev/null)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No shell scripts found."; exit 0
+          fi
+          printf 'Checking:\n'; printf '  %s\n' "${files[@]}"
+          shellcheck --severity=error "${files[@]}"
+
+  secret-scan:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so Gitleaks can scan past commits
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Gitleaks is free for personal + public repos. Organizations must set
+          # a (free) GITLEAKS_LICENSE secret; add it here if this repo moves to an org.
+          # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  claude-review:
+    name: AI security review (Claude)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # to comment findings on the PR
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2  # diff-aware review needs the PR head + its parent
+
+      - name: Claude Code security review
+        # Skips cleanly on PRs where the API key isn't configured (e.g. forks).
+        if: ${{ secrets.CLAUDE_API_KEY != '' }}
+        uses: anthropics/claude-code-security-review@main
+        with:
+          claude-api-key: ${{ secrets.CLAUDE_API_KEY }}
+          comment-pr: true
+          exclude-directories: external

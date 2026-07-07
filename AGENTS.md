@@ -43,6 +43,17 @@ Name skill folders with lowercase hyphen-case, for example `youtube-toolkit` or 
 
 Validate every changed skill with `quick_validate.py`. If a skill includes scripts, run a representative smoke test in a temporary directory or against harmless sample input. For symlink or filesystem automation, test both success and conflict paths before committing.
 
+### Security auditing
+
+Skills are executed by agents, so a malicious or careless skill is a supply-chain risk. `scripts/audit_skills_security.py` statically scans skill sources for remote-code execution (`curl … | sh`), reverse shells, destructive deletes, credential exfiltration, hardcoded secrets, and prompt-injection phrasing. Run it before committing skill changes:
+
+```bash
+python3 scripts/audit_skills_security.py skills          # fails on any critical finding
+python3 scripts/audit_skills_security.py skills --min-severity low   # see advisory findings too
+```
+
+Suppress a verified false positive with an inline `# skills-audit: allow <rule-id>` marker on (or just above) the offending line. The same scan, plus Gitleaks secret scanning and Anthropic's AI security review, runs in CI via `.github/workflows/security-audit.yml`. The AI review layer only activates when a `CLAUDE_API_KEY` repository secret is set.
+
 ## Commit & Pull Request Guidelines
 
 Use concise Conventional Commit-style messages, matching recent history: `feat(scope): ...` or `docs(scope): ...`. Examples include `feat(skills): add english swe daily practice skill` and `docs(readme): add positioning and install guide`.
