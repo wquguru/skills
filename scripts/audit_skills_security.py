@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass, asdict
@@ -173,7 +174,7 @@ def suppressions(line: str) -> tuple[bool, set[str]]:
     return allow_all, ids
 
 
-def scan_file(path: Path, root: Path) -> list[Finding]:
+def scan_file(path: Path) -> list[Finding]:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -201,10 +202,7 @@ def scan_file(path: Path, root: Path) -> list[Finding]:
             if rule.redact:
                 excerpt = excerpt.replace(m.group(0), "«redacted»")
             excerpt = excerpt[:200]
-            try:
-                rel = str(path.relative_to(root if root.is_dir() else root.parent))
-            except ValueError:
-                rel = str(path)
+            rel = os.path.relpath(path, Path.cwd())
             findings.append(Finding(rule.severity, rule.id, rel, i, rule.message, excerpt))
     return findings
 
@@ -228,9 +226,8 @@ def main(argv=None) -> int:
 
     findings: list[Finding] = []
     for root in roots:
-        base = root if root.is_dir() else root.parent
         for f in iter_files(root):
-            findings.extend(scan_file(f, base))
+            findings.extend(scan_file(f))
 
     min_rank = RANK[args.min_severity]
     shown = [f for f in findings if RANK[f.severity] <= min_rank]

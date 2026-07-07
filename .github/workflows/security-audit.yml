@@ -4,18 +4,29 @@ name: Security Audit
 #   1. skill-audit   — deterministic scan for supply-chain risks in skill
 #                      sources (curl|sh, reverse shells, rm -rf ~, cred exfil,
 #                      hardcoded secrets) + shellcheck. No secrets required.
-#   2. secret-scan   — Gitleaks, deterministic secret detection over history.
+#   2. secret-scan   — Gitleaks, deterministic secret detection.
 #   3. claude-review — Anthropic's AI security review; catches prompt injection
 #                      in SKILL.md prose. Requires the CLAUDE_API_KEY secret;
 #                      skipped automatically when the secret is absent.
+#
+# To save compute/tokens, PR and push runs only scan the *changed* files, and
+# the workflow is path-filtered so unrelated commits don't trigger it at all.
+# Manual (workflow_dispatch) and the weekly schedule do a full scan of skills/.
 
 on:
   pull_request:
+    paths: &scan_paths
+      - "skills/**"
+      - "scripts/**"
+      - "external.yml"
+      - "external.lock"
+      - ".github/workflows/security-audit.yml"
   push:
     branches: [main]
+    paths: *scan_paths
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * 1"  # weekly, Monday 06:00 UTC
+    - cron: "0 6 * * 1"  # weekly, Monday 06:00 UTC — full scan
 
 # Least privilege by default; jobs widen only what they need.
 permissions:
@@ -33,21 +44,71 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history so diff scoping can reach the base/before commit.
+          fetch-depth: 0
+
+      - name: Determine scan scope
+        id: scope
+        run: |
+          set -euo pipefail
+          full=0
+          case "${{ github.event_name }}" in
+            workflow_dispatch|schedule) full=1 ;;
+            pull_request) range="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" ;;
+            push)
+              before="${{ github.event.before }}"
+              if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+                full=1
+              else
+                range="$before ${{ github.sha }}"
+              fi ;;
+            *) full=1 ;;
+          esac
+
+          skills_scope="$RUNNER_TEMP/skills_scope.txt"
+          sh_scope="$RUNNER_TEMP/sh_scope.txt"
+          : > "$skills_scope"; : > "$sh_scope"
+
+          if [ "$full" = "1" ]; then
+            echo "Scope: FULL scan of skills/"
+            find skills -type f > "$skills_scope" || true
+            find skills external -type f \( -name '*.sh' -o -name '*.bash' \) 2>/dev/null > "$sh_scope" || true
+          else
+            echo "Scope: changed files in range '$range'"
+            git diff --name-only --diff-filter=ACMR $range > "$RUNNER_TEMP/changed.txt" || true
+            echo "Changed files:"; cat "$RUNNER_TEMP/changed.txt" || true
+            while read -r f; do [ -f "$f" ] && echo "$f"; done \
+              < <(grep -E '^skills/' "$RUNNER_TEMP/changed.txt" || true) > "$skills_scope"
+            while read -r f; do [ -f "$f" ] && echo "$f"; done \
+              < <(grep -E '\.(sh|bash)$' "$RUNNER_TEMP/changed.txt" || true) > "$sh_scope"
+          fi
+
+          echo "skills_scope=$skills_scope" >> "$GITHUB_OUTPUT"
+          echo "sh_scope=$sh_scope" >> "$GITHUB_OUTPUT"
 
       - name: Static security scan of skills
-        run: python3 scripts/audit_skills_security.py skills --fail-on critical --min-severity medium
+        run: |
+          set -euo pipefail
+          scope="${{ steps.scope.outputs.skills_scope }}"
+          if [ ! -s "$scope" ]; then
+            echo "No skill files in scope — nothing to scan."; exit 0
+          fi
+          xargs -a "$scope" python3 scripts/audit_skills_security.py \
+            --fail-on critical --min-severity medium
 
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
-      - name: Shellcheck skill scripts (errors gate the build)
+      - name: Shellcheck changed shell scripts (errors gate the build)
         run: |
-          mapfile -t files < <(find skills external -type f \( -name '*.sh' -o -name '*.bash' \) 2>/dev/null)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No shell scripts found."; exit 0
+          set -euo pipefail
+          scope="${{ steps.scope.outputs.sh_scope }}"
+          if [ ! -s "$scope" ]; then
+            echo "No shell scripts in scope — nothing to check."; exit 0
           fi
-          printf 'Checking:\n'; printf '  %s\n' "${files[@]}"
-          shellcheck --severity=error "${files[@]}"
+          echo "Checking:"; cat "$scope"
+          xargs -a "$scope" shellcheck --severity=error
 
   secret-scan:
     name: Secret scan (Gitleaks)
@@ -57,7 +118,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # full history so Gitleaks can scan past commits
+          # On PR/push Gitleaks scans only the new commits; on a full run it
+          # scans history, so fetch everything.
+          fetch-depth: 0
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
@@ -73,6 +136,13 @@ jobs:
     permissions:
       contents: read
       pull-requests: write  # to comment findings on the PR
+    # Route through a third-party Anthropic-compatible gateway when configured.
+    # The action itself has no base-url input, but it's a composite action, so
+    # its internal steps inherit this JOB-level env var (step-level env would
+    # not reach them). Leave the ANTHROPIC_BASE_URL secret unset to use the
+    # default api.anthropic.com, and put the matching key in CLAUDE_API_KEY.
+    env:
+      ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,7 +150,8 @@ jobs:
           fetch-depth: 2  # diff-aware review needs the PR head + its parent
 
       - name: Claude Code security review
-        # Skips cleanly on PRs where the API key isn't configured (e.g. forks).
+        # Diff-aware by design (only changed files). Skips cleanly on PRs where
+        # the API key isn't configured (e.g. forks).
         if: ${{ secrets.CLAUDE_API_KEY != '' }}
         uses: anthropics/claude-code-security-review@main
         with:

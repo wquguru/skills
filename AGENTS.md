@@ -52,7 +52,9 @@ python3 scripts/audit_skills_security.py skills          # fails on any critical
 python3 scripts/audit_skills_security.py skills --min-severity low   # see advisory findings too
 ```
 
-Suppress a verified false positive with an inline `# skills-audit: allow <rule-id>` marker on (or just above) the offending line. The same scan, plus Gitleaks secret scanning and Anthropic's AI security review, runs in CI via `.github/workflows/security-audit.yml`. The AI review layer only activates when a `CLAUDE_API_KEY` repository secret is set.
+Suppress a verified false positive with an inline `# skills-audit: allow <rule-id>` marker on (or just above) the offending line. The same scan, plus Gitleaks secret scanning and Anthropic's AI security review, runs in CI via `.github/workflows/security-audit.yml`. To save compute, PR/push runs scan only the changed files (the weekly schedule and manual `workflow_dispatch` run a full scan).
+
+The AI review layer only activates when a `CLAUDE_API_KEY` repository secret is set. To route it through a third-party Anthropic-compatible gateway, also set an `ANTHROPIC_BASE_URL` secret and use the gateway's key as `CLAUDE_API_KEY`.
 
 ## Commit & Pull Request Guidelines
 
