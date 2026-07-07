@@ -1,0 +1,25 @@
+# SkillSpector baseline — findings listed here are suppressed on future scans.
+# Edit 'reason' fields and add glob 'rules' as needed. See docs/SUPPRESSION.md.
+version: 1
+rules: []
+fingerprints:
+- hash: sha256:532c137f9e50ba30
+  rule_id: PE2
+  file: scripts/install-tools.sh
+  reason: 'Reviewed FPs: yt-dlp --cookies-from-browser flagged as info_stealer; standard
+    SUDO="sudo" idiom; benign tool chaining in install-tools.sh'
+- hash: sha256:532c137f9e50ba30
+  rule_id: PE2
+  file: scripts/install-tools.sh
+  reason: 'Reviewed FPs: yt-dlp --cookies-from-browser flagged as info_stealer; standard
+    SUDO="sudo" idiom; benign tool chaining in install-tools.sh'
+- hash: sha256:138b85c2f4fccdbd
+  rule_id: TM2
+  file: scripts/install-tools.sh
+  reason: 'Reviewed FPs: yt-dlp --cookies-from-browser flagged as info_stealer; standard
+    SUDO="sudo" idiom; benign tool chaining in install-tools.sh'
+- hash: sha256:7564fa1151854e77
+  rule_id: YR1
+  file: references/installation-and-recipes.md
+  reason: 'Reviewed FPs: yt-dlp --cookies-from-browser flagged as info_stealer; standard
+    SUDO="sudo" idiom; benign tool chaining in install-tools.sh'

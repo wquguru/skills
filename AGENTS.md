@@ -45,16 +45,25 @@ Validate every changed skill with `quick_validate.py`. If a skill includes scrip
 
 ### Security auditing
 
-Skills are executed by agents, so a malicious or careless skill is a supply-chain risk. `scripts/audit_skills_security.py` statically scans skill sources for remote-code execution (`curl … | sh`), reverse shells, destructive deletes, credential exfiltration, hardcoded secrets, and prompt-injection phrasing. Run it before committing skill changes:
+Skills are executed by agents, so a malicious or careless skill is a supply-chain risk. CI audits every changed skill with [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector), a static scanner for prompt injection, data exfiltration (with taint tracking), unicode/zero-width deception, unsafe code, and supply-chain issues. To scan locally before committing:
 
 ```bash
-python3 scripts/audit_skills_security.py skills          # fails on any critical finding
-python3 scripts/audit_skills_security.py skills --min-severity low   # see advisory findings too
+uv tool install git+https://github.com/NVIDIA/skillspector.git   # or: pipx install …
+skillspector scan skills/<skill-name> --no-llm   # exit 1 == DO_NOT_INSTALL (risk > 50)
 ```
 
-Suppress a verified false positive with an inline `# skills-audit: allow <rule-id>` marker on (or just above) the offending line. The same scan, plus Gitleaks secret scanning and Anthropic's AI security review, runs in CI via `.github/workflows/security-audit.yml`. To save compute, PR/push runs scan only the changed files (the weekly schedule and manual `workflow_dispatch` run a full scan).
+The scan runs offline (`--no-llm`, no API key), gates the build when a skill scores DO_NOT_INSTALL (risk > 50), and uploads SARIF to the repo Security tab. SkillSpector is pinned to a commit SHA in `.github/workflows/security-audit.yml`; bump it deliberately to adopt upstream changes. Gitleaks (secrets) and shellcheck (shell scripts) also run there. To save compute, PR/push runs scan only the changed skills; the weekly schedule and manual `workflow_dispatch` run a full scan.
 
-The AI review layer only activates when a `CLAUDE_API_KEY` repository secret is set. To route it through a third-party Anthropic-compatible gateway, also set an `ANTHROPIC_BASE_URL` secret and use the gateway's key as `CLAUDE_API_KEY`.
+The static ruleset is deliberately aggressive and can false-positive on legitimate content (e.g. cautionary prose that mentions `rm -rf`, or `yt-dlp --cookies-from-browser`). When a skill trips the gate on reviewed false positives, accept them into a committed per-skill baseline that the workflow picks up automatically:
+
+```bash
+skillspector baseline skills/<skill-name> --no-llm \
+  -o skills/<skill-name>/.skillspector-baseline.yaml --reason "why these are safe"
+```
+
+Baselines suppress only the listed findings, so the gate still fires on any *new* risk. Review each entry before committing — never baseline a finding you haven't understood.
+
+A third AI layer, Anthropic's security review, catches prompt injection in `SKILL.md` prose. It only activates when a `CLAUDE_API_KEY` repository secret is set; to route it through a third-party Anthropic-compatible gateway, also set an `ANTHROPIC_BASE_URL` secret and use the gateway's key as `CLAUDE_API_KEY`.
 
 ## Commit & Pull Request Guidelines
 
