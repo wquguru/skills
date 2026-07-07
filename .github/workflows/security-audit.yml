@@ -193,8 +193,11 @@ jobs:
     # its internal steps inherit this JOB-level env var (step-level env would
     # not reach them). Leave the ANTHROPIC_BASE_URL secret unset to use the
     # default api.anthropic.com, and put the matching key in CLAUDE_API_KEY.
+    # The secrets context is not allowed in `if:` expressions, so mirror the
+    # key into env and gate on that instead.
     env:
       ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+      CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -204,7 +207,7 @@ jobs:
       - name: Claude Code security review
         # Diff-aware by design (only changed files). Skips cleanly on PRs where
         # the API key isn't configured (e.g. forks).
-        if: ${{ secrets.CLAUDE_API_KEY != '' }}
+        if: ${{ env.CLAUDE_API_KEY != '' }}
         uses: anthropics/claude-code-security-review@main
         with:
           claude-api-key: ${{ secrets.CLAUDE_API_KEY }}
