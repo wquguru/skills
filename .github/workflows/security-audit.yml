@@ -81,7 +81,9 @@ jobs:
             git diff --name-only --diff-filter=ACMR $range > "$RUNNER_TEMP/changed.txt" || true
             echo "Changed files:"; cat "$RUNNER_TEMP/changed.txt" || true
             # Map each changed skills/<name>/... file back to its skill directory.
-            grep -E '^skills/[^/]+/' "$RUNNER_TEMP/changed.txt" \
+            # grep exits 1 on no match, which pipefail would turn into a step
+            # failure — guard it so "no skills changed" is a valid outcome.
+            { grep -E '^skills/[^/]+/' "$RUNNER_TEMP/changed.txt" || true; } \
               | sed -E 's#^(skills/[^/]+)/.*#\1#' | sort -u \
               | while read -r d; do [ -d "$d" ] && echo "$d"; done > "$dirs"
             while read -r f; do [ -f "$f" ] && echo "$f"; done \
