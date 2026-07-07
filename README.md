@@ -1,5 +1,7 @@
 # Skills
 
+[![Security Audit](https://github.com/wquguru/skills/actions/workflows/security-audit.yml/badge.svg)](https://github.com/wquguru/skills/actions/workflows/security-audit.yml)
+
 A small collection of practical Claude Code skills.
 
 ## Skills

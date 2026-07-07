@@ -1,0 +1,16 @@
+# SkillSpector baseline — reviewed false positives, suppressed on future scans.
+# Uses glob 'rules' (rule id + path) rather than exact fingerprints so routine
+# edits to the skill don't force regeneration. Suppressed findings never count
+# toward the risk score. See docs/SUPPRESSION.md.
+version: 1
+rules:
+  - id: "YR1"
+    path: "references/*"
+    reason: "yt-dlp --cookies-from-browser is documented, legitimate usage; the info_stealer YARA rule false-positives on cookie/credential vocabulary in reference docs."
+  - id: "PE2"
+    path: "scripts/install-tools.sh"
+    reason: "Standard SUDO=\"sudo\" fallback idiom that only elevates for non-root package installs."
+  - id: "TM2"
+    path: "scripts/install-tools.sh"
+    reason: "Benign brew/apt install command chaining in the dependency installer."
+fingerprints: []

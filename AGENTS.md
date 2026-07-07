@@ -43,6 +43,28 @@ Name skill folders with lowercase hyphen-case, for example `youtube-toolkit` or 
 
 Validate every changed skill with `quick_validate.py`. If a skill includes scripts, run a representative smoke test in a temporary directory or against harmless sample input. For symlink or filesystem automation, test both success and conflict paths before committing.
 
+### Security auditing
+
+Skills are executed by agents, so a malicious or careless skill is a supply-chain risk. CI audits every changed skill with [NVIDIA SkillSpector](https://github.com/NVIDIA/skillspector), a static scanner for prompt injection, data exfiltration (with taint tracking), unicode/zero-width deception, unsafe code, and supply-chain issues. To scan locally before committing:
+
+```bash
+uv tool install git+https://github.com/NVIDIA/skillspector.git   # or: pipx install …
+skillspector scan skills/<skill-name> --no-llm   # exit 1 == DO_NOT_INSTALL (risk > 50)
+```
+
+The scan runs offline (`--no-llm`, no API key), gates the build when a skill scores DO_NOT_INSTALL (risk > 50), and uploads SARIF to the repo Security tab. SkillSpector is pinned to a commit SHA in `.github/workflows/security-audit.yml`; bump it deliberately to adopt upstream changes. Gitleaks (secrets) and shellcheck (shell scripts) also run there. To save compute, PR/push runs scan only the changed skills; the weekly schedule and manual `workflow_dispatch` run a full scan.
+
+The static ruleset is deliberately aggressive and can false-positive on legitimate content (e.g. cautionary prose that mentions `rm -rf`, or `yt-dlp --cookies-from-browser`). When a skill trips the gate on reviewed false positives, accept them into a committed per-skill baseline that the workflow picks up automatically:
+
+```bash
+skillspector baseline skills/<skill-name> --no-llm \
+  -o skills/<skill-name>/.skillspector-baseline.yaml --reason "why these are safe"
+```
+
+Baselines suppress only the listed findings, so the gate still fires on any *new* risk. Review each entry before committing — never baseline a finding you haven't understood.
+
+A third AI layer, Anthropic's security review, catches prompt injection in `SKILL.md` prose. It only activates when a `CLAUDE_API_KEY` repository secret is set; to route it through a third-party Anthropic-compatible gateway, also set an `ANTHROPIC_BASE_URL` secret and use the gateway's key as `CLAUDE_API_KEY`.
+
 ## Commit & Pull Request Guidelines
 
 Use concise Conventional Commit-style messages, matching recent history: `feat(scope): ...` or `docs(scope): ...`. Examples include `feat(skills): add english swe daily practice skill` and `docs(readme): add positioning and install guide`.

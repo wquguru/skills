@@ -1,0 +1,16 @@
+# SkillSpector baseline — reviewed false positives, suppressed on future scans.
+# Uses glob 'rules' (rule id + path) rather than exact fingerprints so routine
+# edits to the skill don't force regeneration. Suppressed findings never count
+# toward the risk score. See docs/SUPPRESSION.md.
+version: 1
+rules:
+  - id: "AS1"
+    path: "SKILL.md"
+    reason: "This skill's purpose is auditing agent config/memory/cron; reading .claude/scheduled_tasks.json is intended behavior, not an attack."
+  - id: "TM1"
+    path: "SKILL.md"
+    reason: "The flagged line is a cautionary instruction NOT to copy rm -rf commands verbatim; the rm -rf token is matched inside safety prose."
+  - id: "MP3"
+    path: "SKILL.md"
+    reason: "The flagged line is a safety rule about not deleting history without an archive; matched as prose, not a memory-manipulation payload."
+fingerprints: []

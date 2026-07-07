@@ -1,0 +1,212 @@
+name: Security Audit
+
+# Security auditing for Agent Skills. Runs three complementary layers:
+#   1. skill-audit   — NVIDIA SkillSpector static scan of each skill (prompt
+#                      injection, exfiltration/taint tracking, unicode deception,
+#                      unsafe code via AST, supply-chain) + shellcheck. Offline
+#                      (no API key). Uploads SARIF to the Security tab and gates
+#                      when a skill scores DO_NOT_INSTALL (risk > 50).
+#   2. secret-scan   — Gitleaks, deterministic secret detection.
+#   3. claude-review — Anthropic's AI security review; catches prompt injection
+#                      in SKILL.md prose. Requires the CLAUDE_API_KEY secret;
+#                      skipped automatically when the secret is absent.
+#
+# To save compute, PR/push runs scan only the *changed* skills; manual dispatch
+# and the weekly schedule scan every skill. Path filters keep unrelated commits
+# from triggering the workflow at all.
+
+on:
+  pull_request:
+    paths: &scan_paths
+      - "skills/**"
+      - "scripts/**"
+      - "external.yml"
+      - "external.lock"
+      - ".github/workflows/security-audit.yml"
+  push:
+    branches: [main]
+    paths: *scan_paths
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"  # weekly, Monday 06:00 UTC — full scan
+
+# Least privilege by default; jobs widen only what they need.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  skill-audit:
+    name: Skill security scan (SkillSpector)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # upload SARIF to the Security tab
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so diff scoping can reach the base commit
+
+      - name: Determine scan scope
+        id: scope
+        run: |
+          set -euo pipefail
+          full=0
+          case "${{ github.event_name }}" in
+            workflow_dispatch|schedule) full=1 ;;
+            pull_request) range="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" ;;
+            push)
+              before="${{ github.event.before }}"
+              if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+                full=1
+              else
+                range="$before ${{ github.sha }}"
+              fi ;;
+            *) full=1 ;;
+          esac
+
+          dirs="$RUNNER_TEMP/skill_dirs.txt"
+          sh_scope="$RUNNER_TEMP/sh_scope.txt"
+          : > "$dirs"; : > "$sh_scope"
+
+          if [ "$full" = "1" ]; then
+            echo "Scope: FULL scan of every skill"
+            find skills -mindepth 1 -maxdepth 1 -type d | sort -u > "$dirs" || true
+            find skills external -type f \( -name '*.sh' -o -name '*.bash' \) 2>/dev/null > "$sh_scope" || true
+          else
+            echo "Scope: changed files in range '$range'"
+            git diff --name-only --diff-filter=ACMR $range > "$RUNNER_TEMP/changed.txt" || true
+            echo "Changed files:"; cat "$RUNNER_TEMP/changed.txt" || true
+            # Map each changed skills/<name>/... file back to its skill directory.
+            grep -E '^skills/[^/]+/' "$RUNNER_TEMP/changed.txt" \
+              | sed -E 's#^(skills/[^/]+)/.*#\1#' | sort -u \
+              | while read -r d; do [ -d "$d" ] && echo "$d"; done > "$dirs"
+            while read -r f; do [ -f "$f" ] && echo "$f"; done \
+              < <(grep -E '\.(sh|bash)$' "$RUNNER_TEMP/changed.txt" || true) > "$sh_scope"
+          fi
+
+          echo "Skills to scan:"; cat "$dirs" || true
+          echo "skill_dirs=$dirs" >> "$GITHUB_OUTPUT"
+          echo "sh_scope=$sh_scope" >> "$GITHUB_OUTPUT"
+
+      - name: Install SkillSpector
+        run: |
+          set -euo pipefail
+          # Pinned to a commit SHA — NVIDIA/skillspector has no release tags yet.
+          # Bump this SHA deliberately to adopt upstream changes.
+          python3 -m pip install --user --quiet \
+            "git+https://github.com/NVIDIA/skillspector.git@c2d09df019e358d3dc12d980b82c798b87cb9f56"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: SkillSpector scan (offline)
+        run: |
+          set -uo pipefail
+          scope="${{ steps.scope.outputs.skill_dirs }}"
+          if [ ! -s "$scope" ]; then
+            echo "No skills in scope — nothing to scan."
+            echo "SKILLSPECTOR_FAIL=0" >> "$GITHUB_ENV"; exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/sarif"
+          fail=0
+          while read -r dir; do
+            [ -d "$dir" ] || continue
+            name="$(basename "$dir")"
+            # A committed, human-reviewed baseline suppresses accepted findings
+            # so the gate fires only on NEW risk. Generate with:
+            #   skillspector baseline skills/<name> --no-llm -o skills/<name>/.skillspector-baseline.yaml
+            baseline=()
+            [ -f "$dir/.skillspector-baseline.yaml" ] && baseline=(--baseline "$dir/.skillspector-baseline.yaml")
+            echo "::group::skillspector scan $dir"
+            skillspector scan "$dir" --no-llm "${baseline[@]}" --format sarif \
+              --output "$RUNNER_TEMP/sarif/$name.sarif"
+            rc=$?
+            echo "exit=$rc"
+            echo "::endgroup::"
+            case "$rc" in
+              0) : ;;
+              1) echo "::error title=SkillSpector::'$name' scored DO_NOT_INSTALL (risk > 50)"; fail=1 ;;
+              *) echo "::error title=SkillSpector::scan error on '$name' (exit $rc)"; fail=1 ;;
+            esac
+          done < "$scope"
+          echo "SKILLSPECTOR_FAIL=$fail" >> "$GITHUB_ENV"
+
+      - name: Upload SkillSpector SARIF to the Security tab
+        if: always()
+        continue-on-error: true  # a code-scanning misconfig must not mask the gate
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ runner.temp }}/sarif
+          category: skillspector
+
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Shellcheck changed shell scripts (errors gate the build)
+        run: |
+          set -euo pipefail
+          scope="${{ steps.scope.outputs.sh_scope }}"
+          if [ ! -s "$scope" ]; then
+            echo "No shell scripts in scope — nothing to check."; exit 0
+          fi
+          echo "Checking:"; cat "$scope"
+          xargs -a "$scope" shellcheck --severity=error
+
+      - name: Gate on SkillSpector verdict
+        if: always()
+        run: |
+          if [ "${SKILLSPECTOR_FAIL:-0}" = "1" ]; then
+            echo "SkillSpector flagged at least one skill (risk > 50). Failing."; exit 1
+          fi
+          echo "SkillSpector: all scanned skills within acceptable risk."
+
+  secret-scan:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # On PR/push Gitleaks scans only the new commits; on a full run it
+          # scans history, so fetch everything.
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Gitleaks is free for personal + public repos. Organizations must set
+          # a (free) GITLEAKS_LICENSE secret; add it here if this repo moves to an org.
+          # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  claude-review:
+    name: AI security review (Claude)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # to comment findings on the PR
+    # Route through a third-party Anthropic-compatible gateway when configured.
+    # The action itself has no base-url input, but it's a composite action, so
+    # its internal steps inherit this JOB-level env var (step-level env would
+    # not reach them). Leave the ANTHROPIC_BASE_URL secret unset to use the
+    # default api.anthropic.com, and put the matching key in CLAUDE_API_KEY.
+    env:
+      ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2  # diff-aware review needs the PR head + its parent
+
+      - name: Claude Code security review
+        # Diff-aware by design (only changed files). Skips cleanly on PRs where
+        # the API key isn't configured (e.g. forks).
+        if: ${{ secrets.CLAUDE_API_KEY != '' }}
+        uses: anthropics/claude-code-security-review@main
+        with:
+          claude-api-key: ${{ secrets.CLAUDE_API_KEY }}
+          comment-pr: true
+          exclude-directories: external
