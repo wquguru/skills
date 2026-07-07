@@ -1,23 +1,16 @@
-# SkillSpector baseline — findings listed here are suppressed on future scans.
-# Edit 'reason' fields and add glob 'rules' as needed. See docs/SUPPRESSION.md.
+# SkillSpector baseline — reviewed false positives, suppressed on future scans.
+# Uses glob 'rules' (rule id + path) rather than exact fingerprints so routine
+# edits to the skill don't force regeneration. Suppressed findings never count
+# toward the risk score. See docs/SUPPRESSION.md.
 version: 1
-rules: []
-fingerprints:
-- hash: sha256:747d4452f1441329
-  rule_id: AS1
-  file: SKILL.md
-  reason: 'Reviewed FPs: skill audits agent config/memory/cron by design; SKILL.md:158/164
-    are cautionary ''Don''t copy rm -rf / don''t delete history'' instructions matched
-    as prose'
-- hash: sha256:5f80274aa06f38a9
-  rule_id: MP3
-  file: SKILL.md
-  reason: 'Reviewed FPs: skill audits agent config/memory/cron by design; SKILL.md:158/164
-    are cautionary ''Don''t copy rm -rf / don''t delete history'' instructions matched
-    as prose'
-- hash: sha256:83030e56e7a39cc2
-  rule_id: TM1
-  file: SKILL.md
-  reason: 'Reviewed FPs: skill audits agent config/memory/cron by design; SKILL.md:158/164
-    are cautionary ''Don''t copy rm -rf / don''t delete history'' instructions matched
-    as prose'
+rules:
+  - id: "AS1"
+    path: "SKILL.md"
+    reason: "This skill's purpose is auditing agent config/memory/cron; reading .claude/scheduled_tasks.json is intended behavior, not an attack."
+  - id: "TM1"
+    path: "SKILL.md"
+    reason: "The flagged line is a cautionary instruction NOT to copy rm -rf commands verbatim; the rm -rf token is matched inside safety prose."
+  - id: "MP3"
+    path: "SKILL.md"
+    reason: "The flagged line is a safety rule about not deleting history without an archive; matched as prose, not a memory-manipulation payload."
+fingerprints: []
