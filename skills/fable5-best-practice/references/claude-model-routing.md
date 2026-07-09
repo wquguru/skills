@@ -41,7 +41,11 @@ Definitions:
 
 ## Cost Model
 
-Official Anthropic API prices as of 2026-07-02:
+Durable ratios: Sonnet ≈ 1×, Opus ≈ 5×, Fable ≈ 15–25× Sonnet's cost. Absolute prices
+change and carry dated tiers; re-check official docs. The snapshot below is dated and
+illustrative, not current truth.
+
+Official Anthropic API prices as checked on 2026-07-09:
 
 | Model | Input | 5m cache write | 1h cache write | Cache hit | Output | Batch input | Batch output |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -86,6 +90,40 @@ Cost rules:
   accepted outcome.
 - For Codex, do not convert subscription access into "free" work. It consumes usage
   limits or credits, and background/review gates can drain them quickly.
+
+### Orchestrator cache economics
+
+In a long Fable-led session, the dominant cost is often prompt-cache reads, not fresh
+input or reasoning output. Cache reads grow with:
+
+```text
+orchestrator turns x context size at each turn
+```
+
+Every tool result round-trips through the accumulated transcript. A 200-turn Fable
+session whose context grows toward 250k tokens can accumulate roughly 50M cache-read
+tokens. Measured example from a 2026-07-08 six-hour validate-fix-deploy campaign:
+about $84 of Fable spend split roughly 60% cache reads, 16% cache writes, 13% output,
+and 2% fresh input, while six Sonnet/Opus workers that did most validation and
+implementation cost about $8.75 total.
+
+Rules that follow:
+
+- Treat orchestrator turn count as the cost unit. Batch independent tool calls, push
+  long waits into background tasks, and collect background results at one blocking
+  checkpoint instead of incremental peeks.
+- Keep the orchestrator context to conclusions, decisions, risks, and compact
+  evidence packets. Put file reading, edit-test loops, verification polling, and
+  deploy babysitting in workers.
+- Split multi-phase campaigns at phase seams such as validate, fix, deploy, and
+  re-verify. Hand off through compact `state.md`; reducing average context roughly
+  reduces cache-read cost proportionally.
+- Idle gaps longer than the cache TTL can force another cache write on the next turn.
+  Close or hand off sessions that will sit across long real-world delays.
+- When wall-clock time vastly exceeds API time, inspect cache-write and cache-read
+  volume in the usage report.
+- Make long-running workers block inside tool calls rather than ending their turn to
+  await notifications. Each orchestrator rescue turn re-reads the whole Fable context.
 
 ## Token And Context Hygiene
 
@@ -173,6 +211,12 @@ Treat these as defaults, not ceilings:
   compress evidence, then pass the distilled packet upward.
 - Route to the cheapest model expected to pass the acceptance criteria. For
   deliverables, quality is a gate and cost is the optimizer after the gate is met.
+  Pick the cheapest tier where (churn probability × redo cost + orchestrator re-brief
+  turns) stays below the next tier's premium; a churning worker costs orchestrator
+  rescue turns, each a full cache re-read.
+- Never delegate bulk work to a Fable fork. A fork inherits the expensive orchestrator
+  context, so the intended cheap worker runs at orchestrator prices. Spawn a
+  fresh-context Sonnet/Opus subagent instead.
 - Do not default to Haiku for Fable 5 workflows unless the user explicitly requests a
   small-model baseline or the task is extremely bounded.
 - Upgrade a worker from Sonnet to Opus when Sonnet retries are consuming more budget
@@ -419,3 +463,5 @@ verification results, and blockers only. Verify before reporting success.
 - Treating the routing table as a budget cap. It is a default map, not a ceiling.
 - Upgrading silently without recording what failed and what the stronger model must
   improve.
+- Letting a background worker end its turn to "await a notification"; it forces a Fable
+  rescue turn that re-reads the whole context. Tell workers to block, not stop.

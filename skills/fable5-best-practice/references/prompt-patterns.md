@@ -30,7 +30,7 @@ Delegation & model mix:
 subagents, specify which tier gathers evidence (Sonnet), which reviews for taste
 and code quality (Opus), which provides independent senior engineering perspective
 (Codex, if installed), which arbitrates and owns judgment calls (Fable), and the
-independent fresh-context verifier. See references/claude-model-routing.md.
+independent fresh-context verifier. See `claude-model-routing.md`.
 If the harness cannot spawn subagents, say "single model" and collapse this into
 an explore-then-judge sequence.]
 
