@@ -22,10 +22,6 @@ Fable 5: it calls out over-constrained legacy prompting, refusal risks,
 boundary setting, memory files, verifier agents, long-running run design, and
 long-run communication style.
 
-中文简介：面向 Claude Fable 5 的最佳实践。覆盖 Haiku/Sonnet/Opus/Fable
-模型分层路由、effort 档位与升级诊断、refusal 与 fallback 处理、长时程自主任务
-设计，以及旧 prompt 迁移到 Fable 5 的注意事项。
-
 Install:
 
 ```bash
@@ -49,11 +45,6 @@ using subagents economically, and evaluating routes on real work. Benchmark
 provenance and confidence levels live in `references/evidence-notes.md`, and
 `references/prompt-patterns.md` provides reusable task-prompt and worker-packet
 templates.
-
-中文简介：GPT-5.6 Codex 的模型分层（Sol/Terra/Luna）与 reasoning-effort
-路由指南。以「每个被接受结果的总成本」为优化目标，覆盖初始档位选择、失败
-诊断与升级、精简 prompt 与 worker packet、子代理经济性，以及基于真实任务的
-路由评测方法。
 
 Install:
 
