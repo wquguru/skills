@@ -7,7 +7,7 @@ A small collection of practical Claude Code skills.
 
 ## Skills
 
-### `fable5-best-practice`
+### `fable-5-best-practice`
 
 Guides agents and users in getting the most out of Claude Fable 5 for ambitious,
 long-running work. It focuses on where Fable 5 is worth the cost, how to scope
@@ -22,7 +22,7 @@ workflows, and long-run communication style.
 Install:
 
 ```bash
-npx skills add https://github.com/wquguru/skills --skill fable5-best-practice
+npx skills add https://github.com/wquguru/skills --skill fable-5-best-practice
 ```
 
 Ask for help with prompts like:
@@ -189,10 +189,11 @@ external.lock     # resolved upstream commit SHAs (auto-generated)
 scripts/
   vendor.sh       # pulls external.yml sources into external/
 skills/           # self-written skills (published)
-  fable5-best-practice/
+  fable-5-best-practice/
     SKILL.md
     references/
-      claude-model-routing.md
+      evidence-notes.md
+      prompt-patterns.md
   english-swe-daily/
     SKILL.md
     references/
