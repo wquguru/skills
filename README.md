@@ -10,14 +10,21 @@ A small collection of practical Claude Code skills.
 ### `fable-5-best-practice`
 
 Guides agents and users in getting the most out of Claude Fable 5 for ambitious,
-long-running work. It focuses on where Fable 5 is worth the cost, how to scope
-autonomous runs, how to set effort and stop conditions, and how to keep progress
-claims tied to real tool evidence.
+long-running work. It routes tasks across the Haiku / Sonnet / Opus / Fable
+tiers, walks a diagnose-before-escalating ladder for effort and model changes,
+covers Fable-specific API behavior (adaptive thinking, refusal stop reasons,
+fallback), and keeps progress claims tied to real tool evidence. Volatile facts
+such as pricing, retention, and beta headers live in a dated
+`references/evidence-notes.md` provenance snapshot.
 
-The skill is especially useful when migrating older prompts or skills to Fable 5:
-it calls out over-constrained legacy prompting, `reasoning_extraction` refusal
-risks, boundary setting, memory files, verifier agents, `/goal` and `/loop`
-workflows, and long-run communication style.
+The skill is especially useful when migrating older prompts or skills to
+Fable 5: it calls out over-constrained legacy prompting, refusal risks,
+boundary setting, memory files, verifier agents, long-running run design, and
+long-run communication style.
+
+中文简介：面向 Claude Fable 5 的最佳实践。覆盖 Haiku/Sonnet/Opus/Fable
+模型分层路由、effort 档位与升级诊断、refusal 与 fallback 处理、长时程自主任务
+设计，以及旧 prompt 迁移到 Fable 5 的注意事项。
 
 Install:
 
@@ -30,7 +37,36 @@ Ask for help with prompts like:
 - "Is this task Fable-worthy?"
 - "Help me write a Fable 5 prompt for a multi-day coding task."
 - "Review this old skill before migrating it to Fable 5."
-- "Design a /goal or /loop workflow for this agent task."
+- "My Fable run missed the acceptance criteria — raise effort or change model?"
+
+### `gpt-5-6-best-practice`
+
+A routing and evaluation overlay for GPT-5.6 in Codex. It optimizes the cost of
+an accepted result — not the price of a token — across the Sol, Terra, and Luna
+capability tiers: choosing the initial tier and reasoning-effort lane,
+diagnosing failures before escalating, keeping prompts and worker packets lean,
+using subagents economically, and evaluating routes on real work. Benchmark
+provenance and confidence levels live in `references/evidence-notes.md`, and
+`references/prompt-patterns.md` provides reusable task-prompt and worker-packet
+templates.
+
+中文简介：GPT-5.6 Codex 的模型分层（Sol/Terra/Luna）与 reasoning-effort
+路由指南。以「每个被接受结果的总成本」为优化目标，覆盖初始档位选择、失败
+诊断与升级、精简 prompt 与 worker packet、子代理经济性，以及基于真实任务的
+路由评测方法。
+
+Install:
+
+```bash
+npx skills add https://github.com/wquguru/skills --skill gpt-5-6-best-practice
+```
+
+Ask for help with prompts like:
+
+- "Which GPT-5.6 tier and effort should this task start on?"
+- "This Codex run failed — raise effort, or move from Terra to Sol?"
+- "Is Ultra worth it for this task, or should one agent handle it?"
+- "Design a worker packet for this subagent."
 
 ### `english-swe-daily`
 
@@ -190,6 +226,11 @@ scripts/
   vendor.sh       # pulls external.yml sources into external/
 skills/           # self-written skills (published)
   fable-5-best-practice/
+    SKILL.md
+    references/
+      evidence-notes.md
+      prompt-patterns.md
+  gpt-5-6-best-practice/
     SKILL.md
     references/
       evidence-notes.md
