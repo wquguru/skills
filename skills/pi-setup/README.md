@@ -1,6 +1,6 @@
 # pi-setup
 
-帮助配置 Pi Agent（`@earendil-works/pi-coding-agent`）的 Claude Code Skill：DeepSeek V4（内置 provider）+ Ant-Ling Ring-2.6-1T（单模型自定义 provider）+ ZenMux（多模型聚合 provider，含 Gemini 3.5 Flash、Claude、GPT 等）+ 精选扩展，并自动规避 8 个已知坑。
+帮助配置 Pi Agent（`@earendil-works/pi-coding-agent`）的 Agent Skill：DeepSeek V4（内置 provider）+ Ant-Ling Ring-2.6-1T（单模型自定义 provider）+ ZenMux（多模型聚合 provider，含 Gemini 3.5 Flash、Claude、GPT 等）+ 精选扩展，并自动规避 8 个已知坑。
 
 ## 特性
 

@@ -3,7 +3,7 @@
 [![NVIDIA SkillSpector audit](https://img.shields.io/github/actions/workflow/status/wquguru/skills/security-audit.yml?branch=main&logo=nvidia&label=NVIDIA%20SkillSpector%20audit)](https://github.com/wquguru/skills/actions/workflows/security-audit.yml)
 [![AI review by Claude](https://img.shields.io/badge/AI%20review-Claude-d97757?logo=claude)](https://github.com/anthropics/claude-code-security-review)
 
-A small collection of practical Claude Code skills.
+A small collection of practical Agent Skills.
 
 ## Skills
 
