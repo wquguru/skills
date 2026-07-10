@@ -81,6 +81,16 @@ just status</code></pre>
         </article>
       </section>
 
+      <section class="security-band-strip" aria-label="Security audit">
+        <span class="eyebrow" data-i18n="sec.eyebrow">Supply-chain gate</span>
+        <span class="security-layers">SKILLSPECTOR · GITLEAKS · SHELLCHECK · CLAUDE REVIEW</span>
+        <span class="security-meta" data-i18n="sec.meta">Every changed skill is scanned and gated in CI; a weekly sweep re-audits the full registry.</span>
+        <span class="security-links">
+          <a class="hover-frame security-status" id="audit-status" data-state="unknown" href="https://github.com/wquguru/skills/actions/workflows/security-audit.yml">AUDIT[·]</a>
+          <a class="hover-frame security-sarif" href="https://github.com/wquguru/skills/security/code-scanning">SARIF</a>
+        </span>
+      </section>
+
       <section class="overview section-grid" aria-labelledby="overview-title">
         <div>
           <p class="eyebrow" data-i18n="overview.eyebrow">Registry structure</p>

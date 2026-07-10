@@ -74,6 +74,8 @@ const I18N_ZH = {
   "hero.t2": "为真实工作",
   "hero.t3": "而生。",
   "hero.sync": "完整同步",
+  "sec.eyebrow": "供应链闸门",
+  "sec.meta": "每个变更的技能都会在 CI 中扫描并把关；每周一次全量复审整个注册表。",
   "stats.local": "本地可用技能",
   "stats.self": "skills/ 下的自研技能",
   "stats.vendored": "来自 external.yml 的内置技能",
@@ -170,6 +172,32 @@ themeToggle?.addEventListener("click", () => {
 langToggle?.addEventListener("click", () => {
   setLang(root.lang.startsWith("zh") ? "en" : "zh");
 });
+
+const auditStatus = document.querySelector("#audit-status");
+
+async function updateAuditStatus() {
+  if (!auditStatus) return;
+  try {
+    const res = await fetch(
+      "https://api.github.com/repos/wquguru/skills/actions/workflows/security-audit.yml/runs?branch=main&status=completed&per_page=1",
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const run = data.workflow_runs?.[0];
+    if (!run?.conclusion) throw new Error("no completed run");
+    const pass = run.conclusion === "success";
+    auditStatus.dataset.state = pass ? "pass" : "fail";
+    auditStatus.textContent = pass ? "AUDIT[PASS]" : "AUDIT[FAIL]";
+    auditStatus.title = `Last run: ${run.conclusion} (${run.updated_at})`;
+  } catch {
+    // Rate-limited or offline: leave the neutral link to the Actions page.
+    auditStatus.dataset.state = "unknown";
+    auditStatus.textContent = "AUDIT[→]";
+  }
+}
+
+updateAuditStatus();
 
 copyButtons.forEach((button) => {
   const defaultLabel = button.textContent || "COPY";

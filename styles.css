@@ -387,6 +387,54 @@ main,
   text-transform: uppercase;
 }
 
+.security-band-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.4rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-top: 0;
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+}
+
+.security-band-strip .eyebrow {
+  margin-bottom: 0;
+}
+
+.security-layers,
+.security-status,
+.security-sarif {
+  font-family: "Geist Mono", "Departure", ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.security-meta {
+  flex: 1;
+  min-width: 14rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.security-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.security-status {
+  color: var(--muted);
+}
+
+.security-status[data-state="pass"] {
+  color: var(--green);
+}
+
+.security-status[data-state="fail"] {
+  color: var(--amber);
+}
+
 .overview,
 .catalog,
 .install-band {
