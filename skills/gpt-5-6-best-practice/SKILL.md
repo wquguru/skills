@@ -1,5 +1,5 @@
 ---
-name: gpt-56-best-practice
+name: gpt-5-6-best-practice
 description: Optimize GPT-5.6 Codex model-tier, reasoning-effort, and subagent choices for accepted-outcome performance per token across Sol, Terra, and Luna.
 ---
 
@@ -107,6 +107,36 @@ that changes several cannot reveal what caused the improvement.
 
 Leaner prompts are an evaluation hypothesis, not permission to delete real constraints.
 
+## Migrate older prompts
+
+Before moving an existing prompt, `AGENTS.md`, skill, or harness to GPT-5.6:
+
+- Remove step-by-step scaffolding that only compensated for weaker models; official
+  internal evaluations found leaner prompts sometimes improved scores while cutting
+  tokens substantially (see `references/evidence-notes.md` for the measured ranges).
+- Keep rules that protect safety, data, budget, scope, style, and business judgment.
+- Re-map effort settings: old defaults tuned for a previous model are not evidence for
+  the new one. Re-run the routing comparison instead of carrying the setting over.
+- Re-test prompt token counts, latency, accepted-outcome cost, and timeout behavior on
+  the representative suite before standardizing the migrated prompt.
+
+## Design long-running runs
+
+- Use Codex cloud tasks, scheduled checks, or harness-native waiting for work that
+  outlives one interactive turn. Never keep an agent alive with an unbounded sleep or
+  polling loop inside a tool call.
+- Keep the lead context to decisions, risks, current state, and compact evidence.
+  Trim bulky tool output when it ceases to be active evidence.
+- When the task's risk and budget justify it, use a fresh-context verifier: give it
+  the goal, acceptance criteria, artifact or diff, and evidence rather than the
+  executor's self-defense.
+- Ground progress reports in tool results from the session. Label unverified work
+  explicitly; do not count plans, promises, or intended tool calls as completed work.
+- For work spanning sessions, preserve only durable decisions, constraints,
+  corrections, confirmed approaches, and the next action. Update one compact state
+  snapshot rather than scattering notes through the repository, and delete stale or
+  disproved notes.
+
 ## Use subagents economically
 
 Every worker adds model and tool work. Delegate only when the expected quality or
@@ -119,7 +149,7 @@ wall-clock gain is worth the likely token overhead, and measure exceptions local
 - Sol workers: genuinely difficult independent analysis where weaker workers would
   likely churn or need rescue.
 - Give each worker a goal, owned scope, inputs, output contract, verification method,
-  and stop condition.
+  and stop condition. Read `references/prompt-patterns.md` for a reusable packet shape.
 - Cap fan-out, nesting, attempts, and returned context. Keep write ownership disjoint.
 - Keep `agents.max_depth = 1` unless recursive delegation is demonstrably necessary.
   The default `agents.max_threads = 6` is a cap, not a target worker count.
