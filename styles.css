@@ -463,6 +463,16 @@ h2 {
   color: var(--muted);
 }
 
+.skill-link {
+  color: inherit;
+}
+
+.skill-link:hover,
+.skill-link:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.22em;
+}
+
 .source-card code,
 .skill-card code {
   color: var(--ink);
