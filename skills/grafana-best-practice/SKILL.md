@@ -23,7 +23,7 @@ Use this skill to make Grafana dashboards readable, correctly aggregated, naviga
    - Multi-bucket / `union()` queries — every `filter()` pushed inside each `from()` (predicate pushdown), never after `union()`.
    - Query cost: panel count, target count, default time range, refresh interval, high-cardinality tags, expensive reshape operators, and whether current-value panels scan the whole dashboard range.
    - Anonymous/read-only access if the dashboard is public.
-3. Patch dashboard JSON narrowly and preserve existing panel intent.
+3. Patch dashboard JSON narrowly and preserve existing panel intent. Row nesting differs by state: a collapsed row (`collapsed: true`) holds its child panels in the row's own `panels[]`, but an expanded row (`collapsed: false`) keeps them as TOP-LEVEL siblings after the row object — not nested. A programmatic patch that assumes nesting silently skips every panel under an expanded row; index panels by walking both top-level entries and each row's `panels[]`.
 4. Validate locally with JSON parsing, repository tests, and static checks.
 5. Validate queries against the real datasource before deployment when possible.
 6. Deploy through the repository's normal provisioning path.
@@ -121,6 +121,8 @@ When using `map()` to turn labels into friendly series names, finish with a boun
   |> group(columns: ["instance", "_field"])
 ```
 
+`spread()` (and other aggregators) DROP every column that is not a group key or the aggregated value. A column you created with `map()` — e.g. a synthetic `display` name built from `subSource`/`sourceName` — is NOT a group key, so if you `map()` BEFORE `spread()` that column vanishes and the frame comes back with only `_value`. A bar chart then errors "Bar charts requires a string or time field", and a downstream `group([display]) |> sum` collapses everything to one null-labeled bucket ("No data in response"). Fix: run `map()` AFTER `spread()` (raw tags like `sourceName`/`subSource` survive spread because they are group keys, so the map's inputs are still present), or make the synthetic column a group key before aggregating. Compare a working sibling panel that groups by a real tag directly to spot this.
+
 The InfluxDB Flux datasource IGNORES `legendFormat` — series names come from the frame's group-key labels plus the panel's `displayName` (`${__field.labels.x}`). To name or split synthetic series, add the value as a tag AND make it a group key so it becomes a real label, then render via `displayName` (a bare `set()` not in the group key is NOT exposed as a label):
 
 ```flux
@@ -192,7 +194,12 @@ from(bucket: v.defaultBucket)
 ```
 
 Name and describe the panel honestly, for example "(last 6h)" and "15m
-buckets". For multi-field ratios such as cache-hit rate, a 15m bucket can still
+buckets". Also PIN the panel's own time window with a panel-level `timeFrom`
+(e.g. `"timeFrom": "6h"`) so its X-axis matches the data it queries. A panel
+whose query hardcodes `range(start: -6h)` but inherits the dashboard picker
+renders as a thin spike crushed against the right edge the moment an operator
+zooms the dashboard to 24h/7d — the axis spans the picker while the data spans
+6h. `timeFrom` keeps the axis and the data in lockstep regardless of the picker. For multi-field ratios such as cache-hit rate, a 15m bucket can still
 timeout because both numerator and denominator streams must be windowed and
 pivoted; test coarser buckets such as 1h, or use a single overall point for the
 bounded lookback if the operational question allows it. If this still times out,
@@ -290,6 +297,8 @@ Stat and gauge panels:
 - Set `fieldConfig.defaults.displayName` to a short value, often `${__field.labels.instance}` for per-instance cards.
 - Query with backend `last()` when the panel only needs the current value.
 - Do not allow raw names like `trader_total_pnl_usdt {environment="...", url="..."}` to render in compact cards.
+- Titles truncate at narrow widths: a `w: 3` card (8 per 24-col row) clips anything past ~10 chars into "Provider Brea…". Shorten the title or widen to `w: 4` (6 per row) — trimming redundant cards often buys the width. Redundant here means a card that just restates a series already broken out in a trend panel's table legend (per-token-class counts, etc.); drop those from the summary and keep the operating-question cards.
+- A green-only threshold (single `green` step at `null`) paints every value green, so an error count, a slow p95, or a deep queue reads as healthy. Give the operational cards honest bands: error/unpriced counts `yellow` at `≥1`; queue depth and oldest-age `yellow`/`red` at real thresholds; latency `yellow`/`red` in ms; higher-is-better gauges (coverage) inverted — `red` base, `yellow`, then `green`.
 
 Time series panels:
 
@@ -308,6 +317,7 @@ Time series panels:
 - When the worst/lowest value is what matters (e.g. PnL, returns, win rate, free disk, error budget), sort ascending or include `min`.
 - Set a compact display name, for example `${__field.labels.instance} ${__field.name}` or `${__field.labels.container_name}`.
 - Use tooltip sorting consistent with legend sorting.
+- Do not plot two different units on one axis. A panel that mixes seconds (oldest-queue-age ~1000s) with a count (queue depth ~10), or percent (coverage 0–100) with a backlog count, scales to the larger unit and flattens the smaller series to the zero line. Give the secondary metric its own right axis via a field override — match it (`byRegexp` on the friendly series name, since Flux gives no `legendFormat`) and set `custom.axisPlacement: right` plus the correct `unit`/`min`/`max`. Rename the raw `_field` (`queues_enrichOldestAgeS`) to a friendly, matchable label first.
 
 Bar charts:
 
@@ -320,6 +330,7 @@ Table panels:
 
 - NEVER set `fieldConfig.defaults.displayName` on a table — it overrides EVERY column's header to that one string (so Venue / Asset / Status all render as e.g. "funding APR"). Rename columns in the `organize` transform's `renameByName`; color/format per column via field overrides matched `byName` on the renamed value.
 - Flux: `pivot(rowKey: [...], columnKey: ["_field"], valueColumn: "_value")` turns fields into columns, then `organize` to order + rename.
+- Insert `|> group()` BEFORE `pivot()` when the stream is still grouped (e.g. straight after `last()`, which keeps one table per tag-set). Pivoting still-grouped tables pivots WITHIN each table, so the rowKey tags (`name`, `kind`, `topic`, …) stay as frame LABELS and Grafana decorates every value column header with them — `avgScore {kind="rss", name="…", topic="…"}` — and the rowKey tags never become their own columns. A single `group()` flattens all tables into one; `pivot` then emits the rowKey tags as real columns and clean field headers. Same trap for a wide detail table: `last() |> group() |> pivot(...)`.
 
 ## Alerting Rules And Notifications
 

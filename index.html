@@ -439,6 +439,30 @@ just add</code></pre>
       </section>
     </main>
 
+    <div class="skill-modal" id="skill-modal" role="dialog" aria-modal="true" aria-labelledby="skill-modal-title" hidden>
+      <div class="skill-modal-backdrop" data-modal-close></div>
+      <div class="skill-modal-card">
+        <div class="skill-modal-head">
+          <div class="skill-topline">
+            <span class="skill-type" id="skill-modal-type"></span>
+            <span class="skill-path" id="skill-modal-path"></span>
+          </div>
+          <button class="skill-modal-close" id="skill-modal-close" type="button" aria-label="Close dialog" data-i18n="modal.close">CLOSE</button>
+        </div>
+        <h3 id="skill-modal-title"></h3>
+        <p class="skill-modal-desc" id="skill-modal-desc"></p>
+        <p class="skill-modal-label" data-i18n="modal.install">Install</p>
+        <div class="copy-line">
+          <code id="skill-modal-cmd"></code>
+          <button class="copy-button" id="skill-modal-copy" type="button" data-copy="">COPY</button>
+        </div>
+        <div class="skill-modal-actions">
+          <a class="hover-frame" id="skill-modal-source" href="#" target="_blank" rel="noopener" data-i18n="modal.source">SOURCE →</a>
+          <button class="hover-frame" id="skill-modal-share" type="button" data-i18n="modal.share">COPY LINK</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="site-footer">
       <p>
         <span data-i18n="footer.src">Source of truth:</span>
