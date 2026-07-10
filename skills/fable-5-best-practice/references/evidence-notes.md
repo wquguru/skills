@@ -59,6 +59,29 @@ Do not promote a lower-confidence observation into a universal rule.
   avoids duplicate prompt-cache cost on manual retries. Platform coverage for beta
   features is the most volatile fact in this file. Confidence: medium.
 
+## Field note: subagent routing cost audit (2026-07-10)
+
+Source class: individual field report (tier 4 in the evidence hierarchy) — one
+Claude Code session on a Fable lead, orchestrating a monitoring-stack overhaul
+(2 audit agents, 1 design fork, 3 implementation forks, 1 deploy agent).
+
+- Observed: all ~1.06M subagent output tokens ran at Fable pricing because the
+  spawn calls set no model and three workers were forks (forks always inherit the
+  parent model; overrides are ignored — confirmed harness behavior, not model
+  behavior).
+- Post-hoc routing review: ~85% of that spend (discovery 272k, implementation
+  466k, deploy ~200k) was bounded work guarded by deterministic gates (repo lint,
+  Go contract tests, Grafana rule-health API) and matched the Sonnet/Opus rows of
+  the tier table; only the design-synthesis fork (127k) and lead arbitration
+  needed Fable. The implementation plan was explicitly written to be executable
+  without the audits in context, making fork inheritance redundant.
+- Outcome quality was protected by the gates, not the worker tier: the gates
+  caught the one real regression (an alert-rule idiom rewrite) regardless of tier.
+- Status: motivates the "Route subagents explicitly in Fable sessions" section.
+  The phase-routing defaults there are a starting policy from this single run —
+  validate against local evaluations before treating them as fixed, and do not
+  promote the ~60–75% estimated saving into a universal claim.
+
 ## Updating the skill
 
 Before changing a default or quoting one of these facts as current, verify it against

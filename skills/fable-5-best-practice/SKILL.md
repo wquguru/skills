@@ -57,6 +57,37 @@ the harness supports it, and local evaluations show that the handoff reduces the
 cost of obtaining an accepted result. Do not use invented capability scores or fixed
 cost multipliers.
 
+## Route subagents explicitly in Fable sessions
+
+In a harness where the lead runs on Fable (e.g. Claude Code), every subagent
+inherits Fable unless the spawn call sets a cheaper model, and fork-style agents
+that inherit the conversation always run on the parent model — a model override is
+ignored. Two silent-overspend traps follow: leaving the model parameter unset on
+bulk workers, and forking for context convenience. Forking to skip writing a
+handoff packet is a false economy when a self-contained plan or compact packet
+already exists — the fork bills every worker token at Fable prices for context it
+did not need. Fork only when the worker genuinely requires the full conversation's
+judgment context.
+
+Default phase routing for an orchestrated run (adjust on evidence, per the
+escalation ladder below):
+
+- Discovery, audit sweeps, bulk reading, evidence gathering → Sonnet (or the
+  harness's explore-class agent).
+- Well-specified implementation guarded by deterministic gates → Sonnet; move a
+  workstream to Opus when it carries semantic risk (meaning-changing config,
+  alert/money/data semantics).
+- Deploy and ops checklists → Opus; escalate a specific failed diagnosis to the
+  lead rather than pre-buying Fable for the whole phase.
+- Synthesis, design, decision arbitration, final verification of conflicting
+  evidence → Fable (the lead, plus at most one worker).
+
+When acceptance is checkable by deterministic gates — linters, contract tests,
+API health checks — the gate protects quality, not the worker's tier: route down
+and escalate only after a worker fails the gate (about twice) on the same
+workstream. Conversely, if a phase has no deterministic check, either add one or
+accept that the worker's tier is the only quality control and route accordingly.
+
 ## Prompt compactly
 
 Provide the outcome, why it matters, relevant evidence, constraints, observable
@@ -184,6 +215,8 @@ safeguards.
 ## Avoid these anti-patterns
 
 - Defaulting to Fable or to `max` effort because the task feels important.
+- Spawning subagents in a Fable session without an explicit model choice, or
+  forking for context convenience — both silently bill bulk work at Fable prices.
 - Raising effort to compensate for a tier mismatch or a broken prompt.
 - Keeping an agent alive with unbounded sleeps or polling loops inside tool calls.
 - Scattering progress notes and changelogs through a repository instead of updating
