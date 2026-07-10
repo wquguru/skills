@@ -137,6 +137,11 @@ const I18N_ZH = {
   "install.vendor.h": "刷新第三方技能",
   "install.vendor.k": "内置来源",
   "footer.src": "权威来源：",
+  "modal.close": "关闭",
+  "modal.install": "安装命令",
+  "modal.source": "查看来源 →",
+  "modal.share": "复制分享链接",
+  "card.share": "分享",
 };
 
 const i18nNodes = document.querySelectorAll("[data-i18n]");
@@ -155,6 +160,7 @@ function setLang(lang) {
     const zh = I18N_ZH[key];
     node.innerHTML = lang === "zh" && zh ? zh : i18nEnglish.get(node);
   });
+  syncDynamicI18n(lang);
   document.title = lang === "zh" ? "Agent 技能注册表" : "Agent Skills Registry";
   langToggle?.setAttribute("aria-pressed", String(lang === "zh"));
   if (langToggle) langToggle.textContent = lang === "zh" ? "LANG[中]" : "LANG[EN]";
@@ -244,3 +250,151 @@ window.addEventListener(
 window.addEventListener("scroll", updateScroll, { passive: true });
 window.addEventListener("resize", updateScroll);
 setInterval(updateClock, 30_000);
+
+// ---- Skill detail modal (shareable via ?skill=<slug> or #skill=<slug>) ----
+
+// Localizes dynamically created/updated nodes (card share buttons, modal
+// description). These are not in `i18nNodes`, which is captured once at load,
+// so they carry `data-i18n-dyn` (key) plus `data-en` (English innerHTML).
+// Hoisted: setLang() calls this during initial load, before the modal wiring
+// below runs.
+function syncDynamicI18n(lang) {
+  document.querySelectorAll("[data-i18n-dyn]").forEach((node) => {
+    const zh = I18N_ZH[node.dataset.i18nDyn];
+    node.innerHTML = lang === "zh" && zh ? zh : node.dataset.en || "";
+  });
+}
+
+function currentLang() {
+  return root.lang.startsWith("zh") ? "zh" : "en";
+}
+
+const skillModal = document.querySelector("#skill-modal");
+const modalType = document.querySelector("#skill-modal-type");
+const modalPath = document.querySelector("#skill-modal-path");
+const modalTitle = document.querySelector("#skill-modal-title");
+const modalDesc = document.querySelector("#skill-modal-desc");
+const modalCmd = document.querySelector("#skill-modal-cmd");
+const modalCopy = document.querySelector("#skill-modal-copy");
+const modalSource = document.querySelector("#skill-modal-source");
+const modalShare = document.querySelector("#skill-modal-share");
+const modalCloseBtn = document.querySelector("#skill-modal-close");
+const modalBackdrop = skillModal?.querySelector(".skill-modal-backdrop");
+
+const skillCards = new Map();
+document.querySelectorAll(".skill-card").forEach((card) => {
+  const slug = card.querySelector(".skill-link")?.textContent.trim();
+  if (slug) skillCards.set(slug, card);
+});
+
+let modalTrigger = null;
+let modalHideTimer = 0;
+
+function shareUrlFor(slug) {
+  // Query params are lost when reopening a file:// URL, so use the hash form
+  // there; on http(s) the canonical share link is ?skill=<slug>.
+  if (location.protocol === "file:") {
+    return `${location.href.split(/[?#]/)[0]}#skill=${encodeURIComponent(slug)}`;
+  }
+  return `${location.origin}${location.pathname}?skill=${encodeURIComponent(slug)}`;
+}
+
+function openSkillModal(slug, { trigger = null, updateUrl = false } = {}) {
+  const card = skillCards.get(slug);
+  if (!skillModal || !card) return;
+
+  modalTrigger = trigger;
+  modalType.textContent = card.querySelector(".skill-type")?.textContent || "";
+  modalPath.textContent = card.querySelector(".skill-path")?.textContent || "";
+  modalTitle.textContent = slug;
+  skillModal.classList.toggle("third-party", card.classList.contains("third-party"));
+
+  const cardDesc = card.querySelector("p[data-i18n]");
+  modalDesc.dataset.i18nDyn = cardDesc?.dataset.i18n || "";
+  modalDesc.dataset.en = (cardDesc && i18nEnglish.get(cardDesc)) || cardDesc?.innerHTML || "";
+  syncDynamicI18n(currentLang());
+
+  const command = card.querySelector(".copy-line code")?.textContent || "";
+  modalCmd.textContent = command;
+  modalCopy.setAttribute("data-copy", command);
+
+  const sourceHref = card.querySelector(".skill-link")?.getAttribute("href") || "#";
+  modalSource.setAttribute("href", sourceHref);
+
+  window.clearTimeout(modalHideTimer);
+  skillModal.hidden = false;
+  void skillModal.offsetHeight; // reflow so the open transition plays
+  skillModal.classList.add("is-open");
+  document.body.style.overflow = "hidden";
+  modalCloseBtn?.focus();
+
+  if (updateUrl) {
+    const target =
+      location.protocol === "file:"
+        ? `#skill=${encodeURIComponent(slug)}`
+        : `${location.pathname}?skill=${encodeURIComponent(slug)}`;
+    try {
+      history.replaceState(null, "", target);
+    } catch {
+      // Some browsers block replaceState on file:// — the modal still works.
+    }
+  }
+}
+
+function closeSkillModal() {
+  if (!skillModal || skillModal.hidden) return;
+  skillModal.classList.remove("is-open");
+  document.body.style.overflow = "";
+  modalHideTimer = window.setTimeout(() => {
+    skillModal.hidden = true;
+  }, 200);
+  try {
+    history.replaceState(null, "", location.pathname);
+  } catch {
+    // Ignore: URL cleanup is best-effort on file://.
+  }
+  modalTrigger?.focus?.();
+  modalTrigger = null;
+}
+
+modalCloseBtn?.addEventListener("click", closeSkillModal);
+modalBackdrop?.addEventListener("click", closeSkillModal);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && skillModal && !skillModal.hidden) closeSkillModal();
+});
+
+modalShare?.addEventListener("click", async () => {
+  const slug = modalTitle?.textContent;
+  if (!slug || !modalShare) return;
+  try {
+    await copyText(shareUrlFor(slug));
+    modalShare.textContent = currentLang() === "zh" ? "已复制" : "COPIED";
+  } catch {
+    modalShare.textContent = "FAILED";
+  }
+  window.setTimeout(() => {
+    const zh = I18N_ZH[modalShare.dataset.i18n];
+    modalShare.innerHTML = currentLang() === "zh" && zh ? zh : i18nEnglish.get(modalShare);
+  }, 1400);
+});
+
+// Per-card share affordance, injected so the 16 card blocks stay hand-editable.
+skillCards.forEach((card, slug) => {
+  const topline = card.querySelector(".skill-topline");
+  if (!topline) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "skill-share-button";
+  button.dataset.i18nDyn = "card.share";
+  button.dataset.en = "SHARE";
+  button.setAttribute("aria-haspopup", "dialog");
+  button.addEventListener("click", () => openSkillModal(slug, { trigger: button, updateUrl: true }));
+  topline.append(button);
+});
+syncDynamicI18n(currentLang());
+
+// Deep link: ?skill=<slug> wins, then #skill=<slug>. Unknown slugs are ignored.
+const deepLinkSlug =
+  new URLSearchParams(location.search).get("skill") ||
+  (location.hash.startsWith("#skill=") ? decodeURIComponent(location.hash.slice("#skill=".length)) : "");
+if (deepLinkSlug) openSkillModal(deepLinkSlug.trim());

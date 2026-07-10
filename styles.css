@@ -869,3 +869,164 @@ pre code {
     display: none;
   }
 }
+
+.skill-share-button {
+  flex: 0 0 auto;
+  min-height: 24px;
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  color: var(--soft);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.skill-share-button:hover,
+.skill-share-button:focus-visible {
+  background: var(--selection);
+  border-color: var(--line-strong);
+  color: #101211;
+  outline: 0;
+}
+
+/* Keep path + share grouped on the right once the share button is injected. */
+.skill-topline .skill-path {
+  margin-left: auto;
+}
+
+.skill-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4vw, 2.5rem);
+}
+
+.skill-modal[hidden] {
+  display: none;
+}
+
+.skill-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--ink) 36%, transparent);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.skill-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: min(84vh, 44rem);
+  overflow-y: auto;
+  padding: clamp(1rem, 3.5vw, 1.5rem);
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.skill-modal.is-open .skill-modal-backdrop {
+  opacity: 1;
+}
+
+.skill-modal.is-open .skill-modal-card {
+  opacity: 1;
+  transform: none;
+}
+
+.skill-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.skill-modal-head .skill-topline {
+  flex: 1;
+  min-width: 0;
+}
+
+.skill-modal-close {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.skill-modal-close:hover,
+.skill-modal-close:focus-visible {
+  background: var(--selection);
+  color: #101211;
+  outline: 0;
+}
+
+.skill-modal-card h3 {
+  margin-top: 0.85rem;
+  font-size: clamp(1.25rem, 3vw, 1.7rem);
+  line-height: 1.04;
+}
+
+.skill-modal-desc {
+  margin: 0.85rem 0 0;
+  color: var(--muted);
+}
+
+.skill-modal-desc code {
+  color: var(--ink);
+  font-size: 0.92em;
+  font-weight: 700;
+}
+
+.skill-modal-label {
+  margin: 1.25rem 0 0;
+  color: var(--soft);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.skill-modal-card .copy-line {
+  margin-top: 0.5rem;
+}
+
+.skill-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.skill-modal-actions a,
+.skill-modal-actions button {
+  padding: 6px 8px;
+  color: var(--ink);
+  font-family: "Geist Mono", monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skill-modal-backdrop,
+  .skill-modal-card {
+    transition: none;
+    transform: none;
+  }
+}
