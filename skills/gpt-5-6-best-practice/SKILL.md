@@ -54,6 +54,33 @@ diagnostic metric rather than a cross-tier cost proxy.
 These are starting roles, not permanent assignments. Route from task shape and local
 evidence. Do not invent universal capability scores.
 
+## Prevent oversized Sol runs
+
+When the active lead is Sol, apply this gate before starting the requested work. Stop
+and recommend Luna or Terra only when the cheaper tier is likely to preserve the
+acceptance outcome, the surface offers an actionable switch or new-task handoff, and
+expected remaining savings exceed duplicated prompt, context, restart, and handoff
+overhead. Do not create subagents merely to rationalize the Sol lead.
+
+When those conditions hold, use:
+
+```text
+This task is likely to achieve the same accepted outcome on [Luna or Terra] at lower
+cost because [task-specific reason]. [Switch to that tier here, or start a new task on
+that tier using the compact handoff below.] If you intentionally want this task to
+remain on Sol, say so.
+```
+
+Use only the action the surface supports. For a new-task route, include a compact
+handoff containing the outcome, constraints, acceptance criteria, and necessary paths
+or evidence; do not make the user reconstruct the task.
+
+After an explicit request to remain on Sol, continue without repeating the advisory.
+If switching is unavailable or its overhead may erase the saving, finish the current
+task and give at most one short recommendation for future tasks. This includes
+immediate answers and short tool-backed work. In strict cost mode, stop whenever a
+supported cheaper route is likely to be non-inferior and net-cheaper after rerouting.
+
 ## Choose the initial lane
 
 Before standardizing a route for a workload family whose quality needs are uncertain,
@@ -141,8 +168,11 @@ Before moving an existing prompt, `AGENTS.md`, skill, or harness to GPT-5.6:
 
 ## Use subagents economically
 
-Every worker adds model and tool work. Delegate only when the expected quality or
-wall-clock gain is worth the likely token overhead, and measure exceptions locally.
+Every worker adds model and tool work. Under the default cost-minimizing policy,
+delegate only when independent workstreams are expected to lower total
+accepted-outcome cost with non-inferior acceptance performance. Use higher-cost
+parallelism only when the user explicitly prioritizes latency or additional quality
+and accepts the cost tradeoff. Measure exceptions locally.
 
 - Luna workers, when available and locally validated: fixed-schema, repeatable,
   independently verifiable subtasks.
@@ -194,6 +224,8 @@ token-saving feature.
 ## Avoid these anti-patterns
 
 - Always starting with Luna because its tokens are cheapest.
+- Continuing material Luna- or Terra-suitable work on Sol without a routing advisory.
+- Creating subagents solely to rationalize an oversized Sol lead.
 - Pushing Luna or Terra to Max without comparing a stronger tier at Low or Medium.
 - Using Sol for mechanical volume or using Ultra for sequential work.
 - Launching many workers because the harness permits them.

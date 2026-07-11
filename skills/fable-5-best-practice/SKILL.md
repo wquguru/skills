@@ -41,6 +41,33 @@ File count, elapsed time, or use of memory does not by itself justify Fable. Avo
 for routine Q&A, formatting, mechanical edits, bulk discovery, and deterministic work
 that a cheaper model can reliably complete.
 
+## Enforce the premium-tier gate
+
+When the active lead is Fable, apply this gate before starting the requested work.
+Decline to execute on Fable only when all three conditions hold:
+
+1. Haiku, Sonnet, or Opus is likely to meet the same acceptance criteria.
+2. The active surface offers an actionable switch or a new-task handoff.
+3. Expected savings on the remaining work exceed the duplicated prompt, context,
+   restart, and handoff overhead.
+
+Recommend the cheapest suitable tier and give one task-specific reason:
+
+```text
+This task does not justify Fable. Use [tier] because [task-specific reason].
+If you intentionally want to continue on Fable, say so explicitly.
+```
+
+Do not spawn workers merely to justify keeping a Fable lead. Under the default
+cost-minimizing policy, subagents are appropriate only when independent workstreams
+plus cheaper worker models reduce expected total accepted-outcome cost while
+preserving acceptance performance. The only exception is an explicit user preference
+for lower latency that accepts higher cost. If switching is unavailable or its
+overhead may erase the saving, finish the current task and give at most one short
+recommendation for future tasks. This includes immediate answers and short tool-backed
+work. If the user explicitly chooses to continue on Fable after an advisory, proceed
+without repeating it and still apply the normal delegation gate.
+
 Start from task shape, not prestige:
 
 | Tier | Start here for | Move up when | Do not use as |
@@ -79,11 +106,13 @@ version-specific. If worker models cannot be selected, do not claim model-routin
 savings; optimize decomposition, context size, fan-out, and verification instead.
 
 Delegate only when work has meaningful independent streams, a compact handoff, and
-an expected quality or latency benefit that exceeds coordination overhead. Prefer one
-lead for sequential work, shared mutable state, or tasks whose handoff would duplicate
-most of the context. Once delegation is chosen, set an explicit worker model whenever
-the harness supports it. An omitted model on a Fable-led worker can silently erase the
-intended savings.
+cheaper workers are expected to lower total accepted-outcome cost without reducing
+acceptance performance. Treat latency as a separate constraint: use higher-cost
+parallelism only when the user prioritizes wall-clock time over minimum cost. Prefer
+one lead for sequential work, shared mutable state, or tasks whose handoff would
+duplicate most of the context. Once delegation is chosen, set an explicit worker model
+whenever the harness supports it. An omitted model on a Fable-led worker can silently
+erase the intended savings.
 
 Route by task shape, not phase name:
 
@@ -234,6 +263,9 @@ safeguards.
 ## Avoid these anti-patterns
 
 - Defaulting to Fable or to `max` effort because the task feels important.
+- Executing a clearly Haiku-, Sonnet-, or Opus-suitable task on Fable without first
+  applying the premium-tier gate.
+- Manufacturing subagent work to rationalize a Fable lead.
 - Spawning subagents in a Fable session without an explicit model choice, or
   forking for context convenience — both can silently erase intended routing savings.
 - Raising effort to compensate for a tier mismatch or a broken prompt.
