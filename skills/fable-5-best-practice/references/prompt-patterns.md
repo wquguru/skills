@@ -1,57 +1,75 @@
-# Compact prompt for substantial Fable tasks
+# Compact packets for Fable work
 
-Use this shape only when the task benefits from Fable's long-horizon reasoning. Omit
-fields that do not affect the work.
+Use these shapes only when the field affects execution. Do not repeat rules already
+provided by the active system, repository, or skill.
+
+## Lead task
 
 ```text
-Context and intent:
-[Who needs this, why it matters, and the relevant evidence or source paths.]
-
 Outcome:
-[The concrete deliverable or decision required.]
+[Concrete deliverable or decision.]
 
-Constraints and boundaries:
-[Scope, prohibited actions, required tools or sources, and approval gates.]
+Context and evidence:
+[Only the facts, paths, and prior decisions needed.]
 
-Acceptance criteria:
+Constraints and approvals:
+[Scope, prohibited actions, and confirmation boundaries.]
+
+Acceptance contract:
 - [Observable result]
-- [Verification method]
-- [Quality bar]
+- [Required verification and residual semantic review]
+- [Safety or quality floor]
 
 Budget and stop condition:
-[Time, cost, tokens, attempts, or an externally checkable stopping rule.]
+[Cost/accounting unit, time, attempts, or external stopping rule.]
 
 Reporting:
-[Audience, format, and the evidence needed to support progress and completion claims.]
-
-Choose the path and act when enough information exists. Ask only for missing input
-that would materially change the result. Keep scope tight, verify before reporting
-success, and use asynchronous workers only when delegation is available and useful.
+[Audience, format, and evidence required for completion claims.]
 ```
 
-## Worker packet for a subagent
+## Worker packet
 
 ```text
 Goal:
-[One sentence describing the result this worker owns.]
+[One result this worker owns.]
+
+Chosen lane and reason:
+[Model/tier + effort, why it fits, and expected cost effect.]
 
 Owned scope:
-[Files, systems, or questions this worker may touch. Keep write ownership disjoint.]
+[Files, systems, or questions. Concurrent writers must have disjoint ownership;
+read-only or explicitly sequential work may share scope.]
 
 Inputs:
-[Only the evidence and paths needed for this workstream.]
+[Distilled evidence and paths; no raw log or repository dump.]
 
 Output contract:
-[Required fields, format, evidence, and maximum useful length.]
+[Required fields, evidence, format, and maximum useful length.]
 
 Verification:
-[The checks that cover this worker's acceptance criteria, plus any residual semantic
-review the checks do not cover.]
+[Objective checks plus residual semantic review they do not cover.]
 
 Stop condition:
-[Attempt, time, cost, or failure boundary at which the worker reports back.]
+[Attempt, time, cost, ambiguity, or failure boundary.]
 ```
 
-Choose the worker model explicitly when the harness supports it. Use a fork only when
-the worker genuinely needs the parent conversation; otherwise prefer this compact
-packet and a fresh context.
+## Fresh-context verifier
+
+```text
+Goal:
+Independently determine whether the artifact satisfies the acceptance contract.
+
+Inputs:
+[Acceptance contract, artifact or diff, and execution evidence. Do not include the
+executor's argument for why its work is correct.]
+
+Output:
+[Pass/fail by criterion, evidence, residual risk, and required correction.]
+
+Stop condition:
+[Evidence gap or scope boundary that prevents a defensible verdict.]
+```
+
+Pin the worker model when the harness supports it. Use a fork only when the worker
+genuinely needs the parent conversation and current inheritance behavior is verified;
+otherwise prefer a compact packet and fresh context.

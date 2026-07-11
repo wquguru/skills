@@ -1,60 +1,74 @@
-# Compact prompt shapes for GPT-5.6 work
+# Compact packets for GPT-5.6 work
 
-Use these shapes when the task is substantial. Omit fields that do not affect the
-work; every field a worker must read is token cost.
+Use these shapes only when the field affects execution. Do not repeat rules already
+provided by the active system, repository, or skill.
 
-## Task prompt for a lead agent
+## Lead task
 
 ```text
-Context and intent:
-[Who needs this, why it matters, and the relevant evidence or source paths.]
-
 Outcome:
-[The concrete deliverable or decision required.]
+[Concrete deliverable or decision.]
 
-Constraints and boundaries:
-[Scope, prohibited actions, required tools or sources, and approval gates.]
+Context and evidence:
+[Only the facts, paths, and prior decisions needed.]
 
-Acceptance criteria:
+Constraints and approvals:
+[Scope, prohibited actions, and confirmation boundaries.]
+
+Acceptance contract:
 - [Observable result]
-- [Verification method]
-- [Quality bar]
+- [Required verification and residual semantic review]
+- [Safety or quality floor]
 
 Budget and stop condition:
-[Time, cost, tokens, attempts, or an externally checkable stopping rule.]
+[Cost/accounting unit, time, attempts, or external stopping rule.]
 
 Reporting:
-[Audience, format, and the evidence needed to support progress and completion claims.]
-
-Choose the path and act when enough information exists. Ask only for missing input
-that would materially change the result. Keep scope tight, and verify before
-reporting success.
+[Audience, format, and evidence required for completion claims.]
 ```
 
-## Worker packet for a subagent
+## Worker packet
 
 ```text
 Goal:
-[One sentence: the result this worker owns.]
+[One result this worker owns.]
+
+Chosen lane and reason:
+[Model/tier + effort, why it fits, and expected cost effect.]
 
 Owned scope:
-[Files, directories, or questions this worker may touch. Write ownership is disjoint
-from every other worker.]
+[Files, systems, or questions. Concurrent writers must have disjoint ownership;
+read-only or explicitly sequential work may share scope.]
 
 Inputs:
-[Distilled evidence and paths the worker needs. Do not forward raw logs or dumps.]
+[Distilled evidence and paths; no raw log or repository dump.]
 
 Output contract:
-[Exact shape of the return value: fields, format, and maximum length. Workers return
-distilled evidence, not raw tool output or reasoning transcripts.]
+[Required fields, evidence, format, and maximum useful length.]
 
 Verification:
-[The command or check the worker must run before claiming success.]
+[Objective checks plus residual semantic review they do not cover.]
 
 Stop condition:
-[Attempt cap, budget, or the failure state at which the worker reports back instead
-of continuing.]
+[Attempt, time, cost, ambiguity, or failure boundary.]
 ```
 
-Route the packet to the cheapest tier likely to finish (see the tier table in
-`SKILL.md`), and cap fan-out, nesting, attempts, and returned context.
+## Fresh-context verifier
+
+```text
+Goal:
+Independently determine whether the artifact satisfies the acceptance contract.
+
+Inputs:
+[Acceptance contract, artifact or diff, and execution evidence. Do not include the
+executor's argument for why its work is correct.]
+
+Output:
+[Pass/fail by criterion, evidence, residual risk, and required correction.]
+
+Stop condition:
+[Evidence gap or scope boundary that prevents a defensible verdict.]
+```
+
+Pin `model` and `model_reasoning_effort` when the surface supports it. Prefer fresh
+context for independent verification and return distilled evidence to the lead.
