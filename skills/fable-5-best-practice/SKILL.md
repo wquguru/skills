@@ -1,6 +1,6 @@
 ---
 name: fable-5-best-practice
-description: Route Claude model tiers (Haiku, Sonnet, Opus, Fable) and effort levels, prompt and migrate prompts for Claude Fable 5 (claude-fable-5), handle its 1M context, adaptive thinking, refusal stop reasons, and fallback, and design long-running agentic runs.
+description: Choose Claude tiers and effort for Fable-led runs, route subagents by task shape, and evaluate accepted-outcome cost while preserving quality.
 ---
 
 # Claude Fable 5 Best Practices
@@ -57,36 +57,55 @@ the harness supports it, and local evaluations show that the handoff reduces the
 cost of obtaining an accepted result. Do not use invented capability scores or fixed
 cost multipliers.
 
+## Optimize accepted-outcome cost
+
+Minimize total cost per accepted task, subject to non-inferior acceptance performance
+and required safety and verification constraints. Count the lead, workers, repeated
+context, tool-output ingestion, retries, rescue passes, and verification. Record human
+correction separately unless an explicit labor-cost model exists. Keep API cost,
+subscription credits, latency, and tokens as separate measurements rather than
+converting them into a made-up common unit.
+
+Compare a single-Fable baseline with a routed design while holding the task, prompt,
+tools, acceptance criteria, and verification constant. Adopt the cheaper route only
+when its acceptance rate stays within a declared tolerance across representative
+tasks. A post-hoc judgment that work looked easy does not establish equal performance.
+
 ## Route subagents explicitly in Fable sessions
 
-In a harness where the lead runs on Fable (e.g. Claude Code), every subagent
-inherits Fable unless the spawn call sets a cheaper model, and fork-style agents
-that inherit the conversation always run on the parent model — a model override is
-ignored. Two silent-overspend traps follow: leaving the model parameter unset on
-bulk workers, and forking for context convenience. Forking to skip writing a
-handoff packet is a false economy when a self-contained plan or compact packet
-already exists — the fork bills every worker token at Fable prices for context it
-did not need. Fork only when the worker genuinely requires the full conversation's
-judgment context.
+First inspect the active harness for available model IDs, effort controls,
+inheritance behavior, and per-worker overrides. These capabilities are surface- and
+version-specific. If worker models cannot be selected, do not claim model-routing
+savings; optimize decomposition, context size, fan-out, and verification instead.
 
-Default phase routing for an orchestrated run (adjust on evidence, per the
-escalation ladder below):
+Delegate only when work has meaningful independent streams, a compact handoff, and
+an expected quality or latency benefit that exceeds coordination overhead. Prefer one
+lead for sequential work, shared mutable state, or tasks whose handoff would duplicate
+most of the context. Once delegation is chosen, set an explicit worker model whenever
+the harness supports it. An omitted model on a Fable-led worker can silently erase the
+intended savings.
 
-- Discovery, audit sweeps, bulk reading, evidence gathering → Sonnet (or the
-  harness's explore-class agent).
-- Well-specified implementation guarded by deterministic gates → Sonnet; move a
-  workstream to Opus when it carries semantic risk (meaning-changing config,
-  alert/money/data semantics).
-- Deploy and ops checklists → Opus; escalate a specific failed diagnosis to the
-  lead rather than pre-buying Fable for the whole phase.
-- Synthesis, design, decision arbitration, final verification of conflicting
-  evidence → Fable (the lead, plus at most one worker).
+Route by task shape, not phase name:
 
-When acceptance is checkable by deterministic gates — linters, contract tests,
-API health checks — the gate protects quality, not the worker's tier: route down
-and escalate only after a worker fails the gate (about twice) on the same
-workstream. Conversely, if a phase has no deterministic check, either add one or
-accept that the worker's tier is the only quality control and route accordingly.
+- Haiku: strict-schema, repetitive, independently checkable work.
+- Sonnet: repository exploration, bounded implementation, routine testing, and
+  checklist execution with clear ownership.
+- Opus: difficult bounded debugging, semantic risk, high-recall review, or weak
+  deterministic coverage.
+- Fable: sustained global judgment, cross-worker synthesis, and arbitration; keep it
+  as the lead unless an independent worker genuinely needs the same capability.
+
+Deterministic gates reduce residual risk only for the properties they cover. They can
+justify testing a cheaper tier, but they do not replace semantic review for unencoded
+requirements. Diagnose the first failure: retry the same lane for transient tooling or
+repairable context problems; raise effort for insufficient checking; move up a tier
+for a reasoning, ambiguity, or state-tracking mismatch. Escalate only the failing
+workstream, then route execution back down after the hard decision is settled.
+
+In one observed Claude Code configuration, workers without an explicit model inherited
+the Fable lead and fork-style workers ignored overrides. Treat this as a volatile field
+observation, verify current behavior and usage, and avoid forks used only to save the
+effort of writing a compact worker packet.
 
 ## Prompt compactly
 
@@ -216,7 +235,7 @@ safeguards.
 
 - Defaulting to Fable or to `max` effort because the task feels important.
 - Spawning subagents in a Fable session without an explicit model choice, or
-  forking for context convenience — both silently bill bulk work at Fable prices.
+  forking for context convenience — both can silently erase intended routing savings.
 - Raising effort to compensate for a tier mismatch or a broken prompt.
 - Keeping an agent alive with unbounded sleeps or polling loops inside tool calls.
 - Scattering progress notes and changelogs through a repository instead of updating

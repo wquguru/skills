@@ -9,9 +9,12 @@ access.
 
 Accessed on 2026-07-10 unless noted otherwise:
 
-- OpenAI, “Models” in the Codex documentation.
-- OpenAI, “Subagents” in the Codex documentation.
-- OpenAI, “Model guidance: Using GPT-5.6.”
+- OpenAI, “Models” in the Codex documentation
+  (https://developers.openai.com/codex/models).
+- OpenAI, “Subagents” in the Codex documentation
+  (https://learn.chatgpt.com/docs/agent-configuration/subagents).
+- OpenAI, “Model guidance: Using GPT-5.6”
+  (https://developers.openai.com/api/docs/guides/latest-model).
 - OpenAI, “GPT-5.6: Frontier intelligence that scales with your ambition.”
 - OpenAI Help Center, “Codex rate card.”
 - Artificial Analysis, GPT-5.6 Sol, Terra, Luna, and effort-variant model pages.
@@ -33,6 +36,12 @@ Do not promote a lower-confidence observation into a universal rule.
   lowest-cost Luna.
 - Codex normally uses Sol at Medium for demanding work. Cost-sensitive routing must
   select Terra or Luna explicitly where the surface permits model choice.
+- Current local Codex clients load custom agents from `.codex/agents/` or
+  `~/.codex/agents/`. Agent files require `name`, `description`, and
+  `developer_instructions` and may pin `model`, `model_reasoning_effort`, and
+  `sandbox_mode`. Source: the official “Subagents” page above.
+- Current GPT-5.6 model IDs are `gpt-5.6-sol`, `gpt-5.6-terra`, and
+  `gpt-5.6-luna`. Source: the official GPT-5.6 model-guidance page above.
 - Max is deeper single-agent reasoning. Codex Ultra is multi-agent orchestration, not
   an API reasoning-effort value and not a token-saving mode.
 - Higher effort increases latency and token use. OpenAI recommends starting from a
@@ -43,9 +52,8 @@ Do not promote a lower-confidence observation into a universal rule.
   improved scores by about 10–15% while reducing total tokens by 41–66% and cost by
   33–67%. OpenAI labels these ranges directional and requires workload-specific
   validation.
-- The general-availability announcement said Ultra coordinates four agents by default;
-  treat this as volatile implementation behavior. `agents.max_depth` defaults to `1`,
-  while `agents.max_threads` defaults to `6` as a cap rather than a target.
+- `agents.max_depth` defaults to `1`, while `agents.max_threads` defaults to `6` as a
+  cap rather than a target.
 - API GPT-5.6 efforts are `none`, `low`, `medium`, `high`, `xhigh`, and `max`. Pro mode
   and the Responses API multi-agent beta are separate from Codex Ultra.
 - Sol, Terra, and Luna API prices were published in a 5:2.5:1 input ratio and a

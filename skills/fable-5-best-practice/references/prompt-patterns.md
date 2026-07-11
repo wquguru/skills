@@ -28,3 +28,30 @@ Choose the path and act when enough information exists. Ask only for missing inp
 that would materially change the result. Keep scope tight, verify before reporting
 success, and use asynchronous workers only when delegation is available and useful.
 ```
+
+## Worker packet for a subagent
+
+```text
+Goal:
+[One sentence describing the result this worker owns.]
+
+Owned scope:
+[Files, systems, or questions this worker may touch. Keep write ownership disjoint.]
+
+Inputs:
+[Only the evidence and paths needed for this workstream.]
+
+Output contract:
+[Required fields, format, evidence, and maximum useful length.]
+
+Verification:
+[The checks that cover this worker's acceptance criteria, plus any residual semantic
+review the checks do not cover.]
+
+Stop condition:
+[Attempt, time, cost, or failure boundary at which the worker reports back.]
+```
+
+Choose the worker model explicitly when the harness supports it. Use a fork only when
+the worker genuinely needs the parent conversation; otherwise prefer this compact
+packet and a fresh context.

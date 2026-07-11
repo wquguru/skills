@@ -65,22 +65,44 @@ Source class: individual field report (tier 4 in the evidence hierarchy) — one
 Claude Code session on a Fable lead, orchestrating a monitoring-stack overhaul
 (2 audit agents, 1 design fork, 3 implementation forks, 1 deploy agent).
 
-- Observed: all ~1.06M subagent output tokens ran at Fable pricing because the
-  spawn calls set no model and three workers were forks (forks always inherit the
-  parent model; overrides are ignored — confirmed harness behavior, not model
-  behavior).
-- Post-hoc routing review: ~85% of that spend (discovery 272k, implementation
-  466k, deploy ~200k) was bounded work guarded by deterministic gates (repo lint,
-  Go contract tests, Grafana rule-health API) and matched the Sonnet/Opus rows of
-  the tier table; only the design-synthesis fork (127k) and lead arbitration
-  needed Fable. The implementation plan was explicitly written to be executable
-  without the audits in context, making fork inheritance redundant.
-- Outcome quality was protected by the gates, not the worker tier: the gates
-  caught the one real regression (an alert-rule idiom rewrite) regardless of tier.
+- Observed in that Claude Code configuration: all ~1.06M subagent output tokens used
+  Fable because the spawn calls set no model and three workers were forks. Those forks
+  inherited the parent model and ignored overrides. The harness version was not
+  recorded, so verify this behavior before relying on it elsewhere.
+- Post-hoc routing review classified ~85% of that spend (discovery 272k,
+  implementation 466k, deploy ~200k) as bounded work worth testing on Sonnet or
+  Opus. The implementation plan was executable without the audits in context,
+  making fork inheritance appear unnecessary.
+- Repo lint, Go contract tests, and the Grafana rule-health API caught one regression,
+  but the observed workers all ran on Fable. This session does not establish that a
+  cheaper tier would have achieved the same result; it motivates a controlled
+  comparison.
 - Status: motivates the "Route subagents explicitly in Fable sessions" section.
-  The phase-routing defaults there are a starting policy from this single run —
-  validate against local evaluations before treating them as fixed, and do not
-  promote the ~60–75% estimated saving into a universal claim.
+  The task-shape categories there are a starting policy from these observations —
+  validate cheaper routes against a controlled baseline before treating them as
+  equivalent or claiming savings.
+
+## Field note: routing must be directive, not descriptive (2026-07-10)
+
+Source class: two individual field reports (tier 4) from the same day, both
+Claude Code sessions with a Fable lead.
+
+- Session A (monitoring-stack overhaul) produced the original routing audit
+  above and added the "Route subagents explicitly in Fable sessions" section.
+- Session B (a token-efficiency investigation) ran ~300k subagent tokens
+  across four bounded workers (repo exploration, SQL analysis, browser readout,
+  scripted calibration) with no model overrides — all inherited Fable — even
+  though the routing section existed. Post-hoc review matched all four workers
+  to the Sonnet rows. Lead re-verification caught two decision-relevant errors, but
+  because the workers ran on Fable this remains a candidate route, not evidence of
+  non-inferior Sonnet performance.
+- Explicit requests to use cheaper worker models changed spawn behavior, showing that
+  the earlier policy was not directive enough. The durable rule is now conditional
+  delegation plus explicit model choice whenever delegation occurs and the harness
+  supports an override.
+- Scope note: this supports a field observation about those spawn parameters, not a
+  durable harness guarantee or a model-capability claim. Do not generalize the "all
+  four workers fit Sonnet" review into "workers never need Fable".
 
 ## Updating the skill
 

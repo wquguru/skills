@@ -1,6 +1,6 @@
 ---
 name: gpt-5-6-best-practice
-description: Optimize GPT-5.6 Codex model-tier, reasoning-effort, and subagent choices for accepted-outcome performance per token across Sol, Terra, and Luna.
+description: Choose GPT-5.6 tiers, reasoning effort, and subagent configurations to minimize accepted-outcome cost while preserving measured quality.
 ---
 
 # GPT-5.6 Codex Efficiency
@@ -28,18 +28,20 @@ As verified on 2026-07-10:
 
 ## Optimize the right metric
 
-Count the whole accepted-outcome cost:
+Sum usage once across every lead, worker, verifier, and retry call:
 
 ```text
-total tokens = lead + worker + tool-output-input + retry/rework + verification tokens
-token efficiency = accepted tasks / total tokens
 accepted-outcome cost = total API or credit cost of all work required to pass
+token efficiency = accepted tasks / total non-overlapping tokens across those calls
 ```
 
 An apparently cheap run is expensive when it fails, omits evidence, causes rework, or
 needs a stronger rescue pass. Fewer tokens are useful only after correctness,
 completeness, evidence, and required verification pass. Track latency, calls, and
-human corrections separately rather than adding incompatible units.
+human corrections separately rather than adding incompatible units. Cached-input and
+reasoning tokens are breakdowns of input and output usage, not extra tokens to add
+again. Across tiers, compare accepted outcomes per dollar or credit; use tokens as a
+diagnostic metric rather than a cross-tier cost proxy.
 
 ## Understand the capability tiers
 
@@ -54,7 +56,11 @@ evidence. Do not invent universal capability scores.
 
 ## Choose the initial lane
 
-Use the lowest lane likely to finish successfully:
+Before standardizing a route for a workload family whose quality needs are uncertain,
+establish a representative acceptance baseline with Sol Medium. Then test Terra
+Medium and, for deterministic work, Luna Low or Medium. This calibration is not
+required for an obviously simple one-off task. After a route repeatedly passes the
+same checks, use the lowest-cost validated lane:
 
 1. Luna Low for simple, repeatable work with an objective output schema.
 2. Luna Medium when the same work needs modest reasoning or one short tool sequence.
@@ -91,6 +97,19 @@ When a run misses acceptance criteria, identify the failure class:
 Change one dimension at a time: tier, effort, prompt, tool set, or orchestration. A run
 that changes several cannot reveal what caused the improvement.
 
+## Make worker routing executable
+
+Inspect the active surface before promising savings: identify available model IDs,
+effort controls, inheritance behavior, and whether worker overrides are supported. If
+the surface cannot select worker models, optimize decomposition, context, fan-out, and
+verification instead of claiming tier-routing savings.
+
+Local Codex clients support custom agents under `.codex/agents/` or
+`~/.codex/agents/`. Pin `model` and `model_reasoning_effort` in the agent file when a
+stable route matters; otherwise Codex may choose them dynamically. Read
+`references/worker-profiles.md` for Luna, Terra, and Sol profiles. Treat those profiles
+as starting configurations, not proof that a tier fits a particular repository.
+
 ## Keep prompts and context lean
 
 - State each instruction once across the task prompt, `AGENTS.md`, skills, and tool
@@ -120,23 +139,6 @@ Before moving an existing prompt, `AGENTS.md`, skill, or harness to GPT-5.6:
 - Re-test prompt token counts, latency, accepted-outcome cost, and timeout behavior on
   the representative suite before standardizing the migrated prompt.
 
-## Design long-running runs
-
-- Use Codex cloud tasks, scheduled checks, or harness-native waiting for work that
-  outlives one interactive turn. Never keep an agent alive with an unbounded sleep or
-  polling loop inside a tool call.
-- Keep the lead context to decisions, risks, current state, and compact evidence.
-  Trim bulky tool output when it ceases to be active evidence.
-- When the task's risk and budget justify it, use a fresh-context verifier: give it
-  the goal, acceptance criteria, artifact or diff, and evidence rather than the
-  executor's self-defense.
-- Ground progress reports in tool results from the session. Label unverified work
-  explicitly; do not count plans, promises, or intended tool calls as completed work.
-- For work spanning sessions, preserve only durable decisions, constraints,
-  corrections, confirmed approaches, and the next action. Update one compact state
-  snapshot rather than scattering notes through the repository, and delete stale or
-  disproved notes.
-
 ## Use subagents economically
 
 Every worker adds model and tool work. Delegate only when the expected quality or
@@ -155,6 +157,9 @@ wall-clock gain is worth the likely token overhead, and measure exceptions local
   The default `agents.max_threads = 6` is a cap, not a target worker count.
 - Prefer one strong worker over several weak workers when the task cannot be decomposed
   without repeated context or cross-worker negotiation.
+- Give semantic verification to a tier that matches the residual risk. Objective gates
+  may use a cheap verifier; high-risk judgment may require Sol even when execution did
+  not.
 
 ## Evaluate routing on real work
 
@@ -164,7 +169,8 @@ work, bounded implementation, ambiguous debugging, multi-file change, and review
 For every configuration record:
 
 - acceptance result and failed criterion;
-- input, cached-input, reasoning, output, worker, and retry tokens when exposed;
+- non-overlapping input and output usage for every lead, worker, verifier, and retry
+  call, with cached-input and reasoning breakdowns when exposed;
 - wall-clock time, tool calls, retries, and human corrections;
 - verification result and total cost or subscription usage signal.
 
