@@ -15,6 +15,10 @@ Context and evidence:
 Constraints and approvals:
 [Scope, prohibited actions, and confirmation boundaries.]
 
+Routing intent:
+[Cost-saving delegation is conditional or topology is mandatory; available named
+profiles or runtime overrides; maximum useful workers.]
+
 Acceptance contract:
 - [Observable result]
 - [Required verification and residual semantic review]
@@ -33,8 +37,12 @@ Reporting:
 Goal:
 [One result this worker owns.]
 
-Chosen lane and reason:
-[Model/tier + effort, why it fits, and expected cost effect.]
+Dispatch binding:
+[Named custom-agent profile or runtime override; effective model/tier + effort, how it
+will be verified, and whether this route is measured, heuristic, or user-mandated.]
+
+Marginal contribution:
+[Independent output this worker adds and which lead work it avoids duplicating.]
 
 Owned scope:
 [Files, systems, or questions. Concurrent writers must have disjoint ownership;
@@ -72,3 +80,20 @@ Stop condition:
 
 Pin `model` and `model_reasoning_effort` when the surface supports it. Prefer fresh
 context for independent verification and return distilled evidence to the lead.
+
+## Cost-aware invocation
+
+The skill already enforces this policy when active. Use the following wording when an
+external harness needs the routing intent stated explicitly:
+
+```text
+Minimize accepted-result cost while meeting the acceptance contract. Use the smallest
+useful number of independent subagents only when the routed plan is expected to cost
+less than the cheapest qualified single-agent route after coordination, verification,
+retries, and rescue.
+
+For every worker, select a named custom-agent profile or otherwise pin and verify its
+model and reasoning effort; do not assume inheritance. If worker pinning is unavailable
+or delegation is not net-cheaper, do not fan out. Recommend the cheaper direct lane
+and apply the premium gate when it is eligible.
+```

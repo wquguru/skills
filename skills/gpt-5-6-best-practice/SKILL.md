@@ -10,8 +10,9 @@ Safety, permissions, repository instructions, and explicit user constraints rema
 authoritative.
 
 Default objective: satisfy the acceptance contract, then minimize accepted-result
-cost. Lower latency or higher quality beyond the contract is a different objective; pursue it
-at higher cost only when the user explicitly chooses that tradeoff.
+cost. Lower latency, higher quality beyond the contract, or mandatory topology is a
+different objective; pursue it at higher cost only when the user explicitly chooses
+that tradeoff.
 
 ## Product snapshot
 
@@ -44,6 +45,31 @@ guardrails. Cached-input and reasoning tokens are breakdowns of input and output
 extra tokens to add again. If the surface exposes no comparable spend signal, describe
 relative resource intensity instead of claiming an exact cheapest route.
 
+## Interpret explicit delegation requests
+
+A request to “use subagents/workers with proper models to save cost” authorizes
+delegation and worker-lane selection within scope; it does not mandate fan-out, lower
+the acceptance contract, choose a Sol lead, or waive the premium gate. Treat the cost
+purpose as conditional: compare the three routes below and delegate only when the
+routed route is expected to be the cheapest accepted route.
+
+If the user requires subagents as a topology independent of cost, follow that topology
+only when it preserves the acceptance contract. “Use subagents regardless of cost” is
+already an explicit higher-cost objective. If the user instead requires subagents “to
+save cost” but routing evidence predicts higher cost, pause and ask whether topology or
+cost governs. If mandatory topology cannot preserve the acceptance contract, pause and
+ask the user to relax either topology or the contract; never weaken or silently replace
+one requirement.
+
+Pin and verify each worker's effective model and effort where supported. If overrides
+are unavailable, inherited, ignored, or unverified, do not dispatch workers for cost
+savings and do not claim worker-tier savings. Prefer the qualified single-agent lane
+or a handoff. A separately confirmed mandatory topology may still use such workers,
+but it is not a cost-saving route. Before dispatch, state the topology, worker lanes,
+cost rationale, and uncertainty compactly. After completion, report verification,
+observable effective lanes, retries/rescues, and the spend signal; without comparable
+spend data, report only relative resource intensity.
+
 ## Cost-aware routing procedure
 
 Follow this order. Later sections explain GPT-specific mappings but do not override the
@@ -51,7 +77,8 @@ procedure.
 
 1. **Fix the contract and objective.** Define the required deliverable, checks,
    semantic review, safety constraints, and approvals. Record any explicit user choice
-   to trade higher cost for latency or quality beyond the contract.
+   to trade higher cost for latency, quality beyond the contract, or mandatory
+   topology.
 2. **Inspect the surface.** Identify the active model, available tiers and effort
    values, lead-switch or new-task handoff mechanism, worker-model overrides and
    inheritance, orchestration limits, permissions, and accounting unit. If a
@@ -83,7 +110,7 @@ procedure.
    otherwise do not claim tier-routing savings. Give each worker a goal, owned scope,
    distilled inputs, output contract, verification including residual semantic review,
    and a stop condition. Cap fan-out, depth, attempts, retries, and returned context.
-   Higher-cost parallelism requires the explicit latency/quality tradeoff from step 1.
+   Higher-cost parallelism requires the explicit higher-cost objective from step 1.
 7. **Diagnose before escalating.** Repair missing or conflicting context first. Retry
    the same lane for a transient tool failure. Raise effort one level for insufficient
    checking on a clear task. Raise tier for a
@@ -134,6 +161,11 @@ Local Codex clients support custom agents under `.codex/agents/` or
 `~/.codex/agents/`. Pin `model`, `model_reasoning_effort`, and intended sandbox in the
 agent file when a stable route matters. Effective permissions can still be constrained
 by the parent or runtime; inspect them before dispatch.
+
+A worker-tier cost claim requires dispatching a named custom agent whose file pins
+`model` and `model_reasoning_effort`, or a runtime surface with equivalent verified
+overrides. The custom agent's `name` is the dispatch identity; a profile merely existing
+on disk does not bind a generic spawn. Prompt steering alone is not verified pinning.
 
 Cost-routing workers normally use Luna or Terra. An independent verifier is different:
 if the acceptance contract requires fresh-context review, its cost is part of every
